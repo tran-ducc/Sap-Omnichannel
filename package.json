@@ -1,0 +1,13 @@
+{
+  "name": "omnichannel-retail",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:api": "npm --prefix apps/api run dev",
+    "db:up": "docker compose up -d"
+  }
+}

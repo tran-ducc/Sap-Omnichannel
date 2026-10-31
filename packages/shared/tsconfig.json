@@ -1,0 +1,13 @@
+{
+  // Compiled to CommonJS so both NestJS (node) and Next.js can consume it.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

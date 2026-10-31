@@ -1,0 +1,332 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens — shared by the landing page and the app (docs/ARCHITECTURE.md §6).
+ * One palette for both: ink (black) for primary actions, sage neutrals, lime as
+ * the single brand highlight, amber only as a warning signal.
+ * Components use semantic names only; raw hex lives here and nowhere else.
+ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Brand */
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-lime: var(--lime);
+  --color-lime-foreground: var(--lime-foreground);
+  --color-lime-soft: var(--lime-soft);
+  --color-board: var(--board);
+  --color-night: var(--night);
+  --color-night-foreground: var(--night-foreground);
+  --color-sage: var(--sage);
+  --color-sage-foreground: var(--sage-foreground);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-ink: var(--amber-ink);
+  --color-success: var(--success);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius by hierarchy: board 32 / card 24 / inner 16 / control = pill */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+}
+
+:root {
+  --radius: 16px;
+
+  --background: #e4e8df; /* page backdrop (sage mist) */
+  --board: #f6f7f1; /* large section boards */
+  --foreground: #121410;
+  --card: #ffffff;
+  --card-foreground: #121410;
+  --popover: #ffffff;
+  --popover-foreground: #121410;
+
+  --ink: #121410;
+  --ink-foreground: #ffffff;
+  --primary: #121410; /* black pill buttons */
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff; /* white pills */
+  --secondary-foreground: #121410;
+  --muted: #eef1ea;
+  --muted-foreground: #5f6858;
+  --accent: #eef1ea;
+  --accent-foreground: #121410;
+  --border: #dde2d6;
+  --input: #cfd6c8;
+  --ring: #121410;
+  --destructive: #c4372f;
+  --success: #3d7a1f;
+
+  --lime: #e2f76a;
+  --lime-foreground: #121410;
+  --lime-soft: #f3fbc7;
+  /* Always-dark surface (data cards like "Efficiency"), same in both themes */
+  --night: #121410;
+  --night-foreground: #f4f6f0;
+  --sage: #949d8d; /* muted data card, like "Total project time" */
+  --sage-foreground: #ffffff;
+  --amber: #f2a93b;
+  --amber-soft: #fcecc9;
+  --amber-ink: #7a4706;
+
+  /* Sales channel identity colours — always paired with the channel name */
+  --ch-pos: #121410;
+  --ch-website: #6c63d9;
+  --ch-shopee: #ee4d2d;
+  --ch-lazada: #2a3bd1;
+  --ch-tiktok: #1f2a1a;
+  --ch-facebook: #1877f2;
+
+  --chart-1: #121410;
+  --chart-2: #c9e33f;
+  --chart-3: #949d8d;
+  --chart-4: #f2a93b;
+  --chart-5: #d5dbce;
+
+  --sidebar: #f6f7f1;
+  --sidebar-foreground: #121410;
+  --sidebar-primary: #121410;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e2f76a;
+  --sidebar-accent-foreground: #121410;
+  --sidebar-border: #dde2d6;
+  --sidebar-ring: #121410;
+}
+
+.dark {
+  --background: #0d0f0c;
+  --board: #151813;
+  --foreground: #eef1ea;
+  --card: #1c2019;
+  --card-foreground: #eef1ea;
+  --popover: #1c2019;
+  --popover-foreground: #eef1ea;
+
+  --ink: #eef1ea;
+  --ink-foreground: #121410;
+  --primary: #e2f76a; /* lime pills read better than white on dark */
+  --primary-foreground: #121410;
+  --secondary: #262b22;
+  --secondary-foreground: #eef1ea;
+  --muted: #232820;
+  --muted-foreground: #a3ad9b;
+  --accent: #262b22;
+  --accent-foreground: #eef1ea;
+  --border: #2c3228;
+  --input: #3a4135;
+  --ring: #e2f76a;
+  --destructive: #f07b72;
+  --success: #a9d65a;
+
+  --lime: #e2f76a;
+  --lime-foreground: #121410;
+  --lime-soft: #2b3315;
+  --night: #050604;
+  --night-foreground: #f4f6f0;
+  --sage: #4c5446;
+  --sage-foreground: #eef1ea;
+  --amber: #f5b85c;
+  --amber-soft: #3b2c12;
+  --amber-ink: #f7d49c;
+
+  --ch-pos: #e2f76a;
+  --ch-website: #9d97f0;
+  --ch-shopee: #ff7a5c;
+  --ch-lazada: #7c88ff;
+  --ch-tiktok: #eef1ea;
+  --ch-facebook: #5aa2ff;
+
+  --chart-1: #e2f76a;
+  --chart-2: #8ea33a;
+  --chart-3: #6b7563;
+  --chart-4: #f5b85c;
+  --chart-5: #3a4135;
+
+  --sidebar: #151813;
+  --sidebar-foreground: #eef1ea;
+  --sidebar-primary: #e2f76a;
+  --sidebar-primary-foreground: #121410;
+  --sidebar-accent: #2b3315;
+  --sidebar-accent-foreground: #e2f76a;
+  --sidebar-border: #2c3228;
+  --sidebar-ring: #e2f76a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+ * Notched corner (from the app reference): a cut-out in a card's top-right
+ * corner that holds round icon buttons. The notch is painted with the colour
+ * of whatever sits behind the card (--notch-bg) and the two pseudo-elements
+ * draw the concave curves where the notch meets the card edges.
+ */
+.notch {
+  --notch-r: 24px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--notch-bg, var(--background));
+  border-bottom-left-radius: var(--notch-r);
+  padding: 0 0 8px 8px;
+}
+.notch::before,
+.notch::after {
+  content: "";
+  position: absolute;
+  width: var(--notch-r);
+  height: var(--notch-r);
+  background: radial-gradient(circle at 0 100%, transparent calc(var(--notch-r) - 0.5px), var(--notch-bg, var(--background)) var(--notch-r));
+}
+.notch::before {
+  top: 0;
+  left: calc(var(--notch-r) * -1);
+}
+.notch::after {
+  right: 0;
+  bottom: calc(var(--notch-r) * -1);
+}
+
+/* Soft brand glow behind photos (landing reference) */
+.glow-lime {
+  background: radial-gradient(closest-side, var(--lime), color-mix(in oklab, var(--amber) 55%, transparent) 60%, transparent);
+  filter: blur(36px);
+  opacity: 0.85;
+}
+
+/* Printing a POS receipt: only the .print-area block is printed, sized for an 80mm roll. */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+    color: #000 !important;
+  }
+  .print-area {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: 72mm;
+    border: none !important;
+    padding: 0 !important;
+  }
+}
+
+/* One-shot highlights used by the live stock demo when a row changes */
+@keyframes flash-lime {
+  from {
+    background-color: var(--lime-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes flash-amber {
+  from {
+    background-color: var(--amber-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes tick-down {
+  from {
+    transform: translateY(-40%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-flash-lime {
+  animation: flash-lime 1.4s ease-out;
+}
+.animate-flash-amber {
+  animation: flash-amber 1.4s ease-out;
+}
+.animate-tick {
+  animation: tick-down 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

@@ -1,0 +1,597 @@
+// =============================================================================
+// Omnichannel Retail — database schema
+// Multi-tenant model: every business row carries `tenantId`. A User is a global
+// identity; their role inside a shop lives on Membership (one user can work for
+// several shops with different roles).
+// Money is stored as Decimal(14,2) even though VND has no minor unit, so the
+// schema survives a future multi-currency requirement.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+/// System role keys. Permissions per role are defined in packages/shared/rbac.
+enum RoleKey {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+}
+
+enum LocationType {
+  STORE
+  WAREHOUSE
+}
+
+enum ChannelType {
+  POS
+  WEBSITE
+  SHOPEE
+  LAZADA
+  TIKTOK_SHOP
+  FACEBOOK
+}
+
+enum ChannelStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  RESERVE
+  RELEASE
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPING
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIALLY_FULFILLED
+  FULFILLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  EWALLET
+  COD
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy, identity, access
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(TRIAL)
+  plan      PlanTier     @default(STARTER)
+  currency  String       @default("VND")
+  timezone  String       @default("Asia/Ho_Chi_Minh")
+  logoUrl   String?
+  trialEndsAt DateTime?
+  /// Last issued order number; incremented atomically to build "DH-000123".
+  orderSeq  Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  memberships   Membership[]
+  roles         Role[]
+  locations     Location[]
+  channels      Channel[]
+  categories    Category[]
+  products      Product[]
+  variants      ProductVariant[]
+  inventory     InventoryLevel[]
+  movements     InventoryMovement[]
+  customers     Customer[]
+  orders        Order[]
+  posSessions   PosSession[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  memberships    Membership[]
+  refreshTokens  RefreshToken[]
+  notifications  Notification[]
+  activityLogs   ActivityLog[]
+  ordersCreated  Order[]             @relation("OrderCreatedBy")
+  ordersAssigned Order[]             @relation("OrderAssignedTo")
+  movements      InventoryMovement[]
+  posSessions    PosSession[]
+}
+
+/// A role inside a tenant. System roles (isSystem = true) are seeded per tenant
+/// from RoleKey; custom roles can be added later without a schema change.
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  key         RoleKey?
+  name        String
+  /// Permission strings such as "product:update" — see packages/shared/rbac.
+  permissions String[]
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+
+  @@unique([tenantId, name])
+}
+
+model Membership {
+  id        String           @id @default(cuid())
+  userId    String
+  tenantId  String
+  roleId    String
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role      Role                 @relation(fields: [roleId], references: [id])
+  /// Staff are scoped to the locations listed here; empty = all locations.
+  locations MembershipLocation[]
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+}
+
+model MembershipLocation {
+  membershipId String
+  locationId   String
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([membershipId, locationId])
+}
+
+/// Rotating refresh token (stored hashed). `tenantId` is the shop the session
+/// was opened for, so a refresh re-issues an access token for the same shop.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tenantId  String
+  tokenHash String    @unique
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Store setup
+// ---------------------------------------------------------------------------
+
+model Location {
+  id        String       @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String
+  type      LocationType @default(STORE)
+  address   String?
+  phone     String?
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inventory   InventoryLevel[]
+  movements   InventoryMovement[]
+  orders      Order[]
+  posSessions PosSession[]
+  members     MembershipLocation[]
+  channels    Channel[]
+
+  @@unique([tenantId, code])
+}
+
+/// A sales channel connection. Marketplace credentials are stored encrypted
+/// (application-level AES-GCM) — never return `credentials` from the API.
+model Channel {
+  id                String        @id @default(cuid())
+  tenantId          String
+  type              ChannelType
+  name              String
+  status            ChannelStatus @default(DISCONNECTED)
+  credentials       Json?
+  /// Stock for this channel is fulfilled from this location.
+  defaultLocationId String?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime      @default(now())
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  defaultLocation Location?        @relation(fields: [defaultLocationId], references: [id])
+  listings        ChannelListing[]
+  orders          Order[]
+
+  @@index([tenantId, type])
+}
+
+// ---------------------------------------------------------------------------
+// Catalog & inventory
+// ---------------------------------------------------------------------------
+
+model Category {
+  id       String  @id @default(cuid())
+  tenantId String
+  name     String
+  parentId String?
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@unique([tenantId, name, parentId])
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String
+  description String?
+  brand       String?
+  categoryId  String?
+  status      ProductStatus @default(ACTIVE)
+  imageUrls   String[]
+  /// Option definitions, e.g. [{ "name": "Size", "values": ["S","M","L"] }]
+  options     Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category Category?        @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status])
+}
+
+model ProductVariant {
+  id             String   @id @default(cuid())
+  tenantId       String
+  productId      String
+  sku            String
+  barcode        String?
+  name           String
+  /// Chosen option values, e.g. { "Size": "M", "Màu": "Đen" }
+  attributes     Json     @default("{}")
+  price          Decimal  @db.Decimal(14, 2)
+  costPrice      Decimal? @db.Decimal(14, 2)
+  compareAtPrice Decimal? @db.Decimal(14, 2)
+  weightGram     Int?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory  InventoryLevel[]
+  movements  InventoryMovement[]
+  listings   ChannelListing[]
+  orderItems OrderItem[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, barcode])
+}
+
+/// Current stock per variant per location. `available = onHand - reserved`
+/// is computed in the service layer. `version` is used for optimistic locking
+/// so concurrent orders from different channels cannot oversell.
+model InventoryLevel {
+  id           String   @id @default(cuid())
+  tenantId     String
+  variantId    String
+  locationId   String
+  onHand       Int      @default(0)
+  reserved     Int      @default(0)
+  reorderPoint Int      @default(5)
+  version      Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variant  ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  location Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, locationId])
+  @@index([tenantId, locationId])
+}
+
+/// Append-only stock ledger. Every change to InventoryLevel writes one row here
+/// in the same transaction, which makes stock history auditable and replayable.
+model InventoryMovement {
+  id            String                @id @default(cuid())
+  tenantId      String
+  variantId     String
+  locationId    String
+  type          InventoryMovementType
+  /// Signed: negative for stock leaving the location.
+  quantity      Int
+  referenceType String?
+  referenceId   String?
+  note          String?
+  createdById   String?
+  createdAt     DateTime              @default(now())
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  location  Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdBy User?          @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId, variantId, createdAt])
+  @@index([referenceType, referenceId])
+}
+
+/// Maps an internal variant to its listing on an external channel.
+model ChannelListing {
+  id           String     @id @default(cuid())
+  channelId    String
+  variantId    String
+  externalId   String
+  externalSku  String?
+  syncStatus   SyncStatus @default(PENDING)
+  lastError    String?
+  lastSyncedAt DateTime?
+
+  channel Channel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, externalId])
+  @@unique([channelId, variantId])
+}
+
+// ---------------------------------------------------------------------------
+// Customers & orders
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id            String    @id @default(cuid())
+  tenantId      String
+  fullName      String
+  phone         String?
+  email         String?
+  gender        String?
+  birthday      DateTime?
+  address       String?
+  tags          String[]
+  note          String?
+  loyaltyPoints Int       @default(0)
+  /// Denormalised aggregates, refreshed when an order completes.
+  totalSpent    Decimal   @default(0) @db.Decimal(14, 2)
+  orderCount    Int       @default(0)
+  lastOrderAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, fullName])
+}
+
+model Order {
+  id                String            @id @default(cuid())
+  tenantId          String
+  /// Human-readable code, unique per tenant, e.g. "DH-000123".
+  code              String
+  channelId         String
+  /// Denormalised from Channel for fast filtering/reporting.
+  channelType       ChannelType
+  externalOrderId   String?
+  locationId        String?
+  customerId        String?
+  status            OrderStatus       @default(PENDING)
+  paymentStatus     PaymentStatus     @default(UNPAID)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  subtotal          Decimal           @db.Decimal(14, 2)
+  discountTotal     Decimal           @default(0) @db.Decimal(14, 2)
+  shippingFee       Decimal           @default(0) @db.Decimal(14, 2)
+  taxTotal          Decimal           @default(0) @db.Decimal(14, 2)
+  total             Decimal           @db.Decimal(14, 2)
+  note              String?
+  shippingAddress   Json?
+  createdById       String?
+  /// Staff only see orders assigned to them.
+  assignedToId      String?
+  posSessionId      String?
+  /// Stock lifecycle markers. Orders imported before stock tracking (or
+  /// seeded history) have neither, so status changes never release or
+  /// deduct stock that was never reserved.
+  stockReservedAt   DateTime?
+  stockDeductedAt   DateTime?
+  cancelReason      String?
+  placedAt          DateTime          @default(now())
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  updatedAt         DateTime          @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channel    Channel     @relation(fields: [channelId], references: [id])
+  location   Location?   @relation(fields: [locationId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id])
+  createdBy  User?       @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  assignedTo User?       @relation("OrderAssignedTo", fields: [assignedToId], references: [id])
+  posSession PosSession? @relation(fields: [posSessionId], references: [id])
+  items      OrderItem[]
+  payments   Payment[]
+
+  @@unique([tenantId, code])
+  @@unique([channelId, externalOrderId])
+  @@index([tenantId, status, placedAt])
+  @@index([tenantId, channelType, placedAt])
+  @@index([tenantId, assignedToId])
+}
+
+/// Name/SKU/price are snapshotted so later catalog edits never rewrite history.
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  variantId String?
+  sku       String
+  name      String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(14, 2)
+  discount  Decimal @default(0) @db.Decimal(14, 2)
+  total     Decimal @db.Decimal(14, 2)
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(14, 2)
+  reference String?
+  paidAt    DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+/// A cashier shift at a POS counter.
+model PosSession {
+  id          String    @id @default(cuid())
+  tenantId    String
+  locationId  String
+  openedById  String
+  openingCash Decimal   @db.Decimal(14, 2)
+  closingCash Decimal?  @db.Decimal(14, 2)
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id])
+  openedBy User     @relation(fields: [openedById], references: [id])
+  orders   Order[]
+
+  @@index([tenantId, locationId, openedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & audit
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String    @id @default(cuid())
+  tenantId  String
+  /// Null = broadcast to everyone in the tenant with access to `type`.
+  userId    String?
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, readAt])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  actorId    String?
+  /// Dotted verb, e.g. "order.cancelled", "product.price_changed".
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?  @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+}
