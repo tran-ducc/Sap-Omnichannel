@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Barcode, Sparkle } from "./decor";
 import { TESTIMONIALS } from "./content";
 import { PHOTOS } from "./photos";
+import { revealStagger } from "./reveal";
 
 const PORTRAITS = [PHOTOS.personHa, PHOTOS.personQuan, PHOTOS.personHuy];
 
@@ -10,7 +11,7 @@ function BadgeCard({ index }: { index: number }) {
   const t = TESTIMONIALS[index];
   const photo = PORTRAITS[index];
   return (
-    <li className="relative pt-10">
+    <li className="hover-lift relative pt-10 hover:shadow-none!">
       {/* lanyard */}
       <span
         className="absolute top-0 left-1/2 h-14 w-7 -translate-x-1/2 rounded-b-sm"
@@ -39,7 +40,7 @@ export function Testimonials() {
     <section aria-labelledby="testimonials-heading" className="mx-auto max-w-[1400px] px-3 py-20 sm:px-5 lg:py-28">
       <div className="grid gap-10 px-3 sm:px-5 lg:grid-cols-[1fr_2.2fr] lg:gap-6 lg:px-0">
         {/* Receipt / ticket card */}
-        <div className="flex flex-col overflow-hidden rounded-3xl bg-board">
+        <div data-reveal className="flex flex-col overflow-hidden rounded-3xl bg-board">
           <div className="p-6 sm:p-7">
             <div className="flex items-center justify-between border-b border-foreground/80 pb-4 text-sm">
               <span className="font-semibold">Sạp</span>
@@ -73,7 +74,7 @@ export function Testimonials() {
           </div>
         </div>
 
-        <ul className="grid gap-6 md:grid-cols-3 md:gap-4">
+        <ul data-reveal-stagger style={revealStagger(130)} className="grid gap-6 md:grid-cols-3 md:gap-4">
           {TESTIMONIALS.map((t, i) => (
             <BadgeCard key={t.name} index={i} />
           ))}

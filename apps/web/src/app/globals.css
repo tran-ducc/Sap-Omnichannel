@@ -330,3 +330,91 @@
 .animate-tick {
   animation: tick-down 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
+/* ------------------------------------------------------------------------ */
+/* Landing motion: scroll reveal, stagger, hover lift, marquee.             */
+/* Wired by components/marketing/reveal-observer.tsx. Tune the vars below.  */
+/* ------------------------------------------------------------------------ */
+:root {
+  --reveal-y: 24px; /* travel distance of the fade-up */
+  --reveal-duration: 900ms;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1); /* slow-out, no bounce */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready [data-reveal],
+  .reveal-ready [data-reveal-stagger] > * {
+    --reveal-d: calc(var(--reveal-delay, 0ms) + var(--i, 0) * var(--stagger, 90ms));
+    opacity: 0;
+    transform: translateY(var(--reveal-y));
+    /* scale/box-shadow listed so .hover-lift keeps its own (undelayed) easing */
+    transition:
+      opacity var(--reveal-duration) var(--ease-soft) var(--reveal-d),
+      transform var(--reveal-duration) var(--ease-soft) var(--reveal-d),
+      scale 500ms var(--ease-soft),
+      box-shadow 500ms var(--ease-soft);
+  }
+  .reveal-ready [data-reveal][data-in],
+  .reveal-ready [data-reveal-stagger][data-in] > * {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Cards: gentle lift on hover. Big cards can soften it: class="hover-lift [--lift:1.01]" */
+.hover-lift {
+  transition:
+    scale 500ms var(--ease-soft),
+    box-shadow 500ms var(--ease-soft);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .hover-lift:hover {
+    scale: var(--lift, 1.02);
+    box-shadow: 0 28px 56px -32px rgb(18 20 16 / 0.35);
+  }
+  /* Landing buttons (shadcn buttonVariants) get the same feel, landing only. */
+  .reveal-ready .group\/button {
+    transition-duration: 400ms;
+    transition-timing-function: var(--ease-soft);
+  }
+  .reveal-ready .group\/button:hover {
+    scale: 1.02;
+    box-shadow: 0 14px 28px -18px rgb(18 20 16 / 0.45);
+  }
+}
+
+/* Marquee: two identical tracks slide left forever; hover pauses. */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2rem;
+  padding-right: 2rem; /* equals gap, so the loop seam is invisible */
+  animation: marquee var(--marquee-duration, 40s) linear infinite; /* slower = larger duration */
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    mask-image: none;
+  }
+  .marquee-track {
+    flex-wrap: wrap;
+    animation: none;
+    row-gap: 0.75rem;
+  }
+  .marquee-track[aria-hidden] {
+    display: none;
+  }
+}

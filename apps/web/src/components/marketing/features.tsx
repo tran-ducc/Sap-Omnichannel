@@ -3,6 +3,7 @@ import { ArrowUpRight, Barcode, BellRing, FileText, History, Store } from "lucid
 import { cn } from "@/lib/utils";
 import { CHANNELS, type ChannelKey } from "./content";
 import { PHOTOS } from "./photos";
+import { revealStagger } from "./reveal";
 
 const LOCATIONS = [
   { name: "Kho tổng Thủ Đức", qty: 182, max: 200 },
@@ -37,7 +38,7 @@ function Body({ children, className }: { children: React.ReactNode; className?: 
 export function Features() {
   return (
     <section id="tinh-nang" aria-labelledby="features-heading" className="mx-auto max-w-[1400px] px-3 py-20 sm:px-5 lg:py-28">
-      <div className="px-3 sm:px-5 lg:px-9">
+      <div data-reveal-stagger className="px-3 sm:px-5 lg:px-9">
         <h2 id="features-heading" className="max-w-3xl text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
           Đủ cho cả cửa hàng, từ quầy thu ngân đến kho
         </h2>
@@ -46,9 +47,9 @@ export function Features() {
         </p>
       </div>
 
-      <div className="mt-12 grid gap-3 lg:grid-cols-12">
+      <div data-reveal-stagger style={revealStagger(110)} className="mt-12 grid gap-3 lg:grid-cols-12">
         {/* Inventory — photo + data, the widest card */}
-        <article className="grid overflow-hidden rounded-3xl bg-card lg:col-span-8 lg:grid-cols-[1fr_1.1fr]">
+        <article className="hover-lift grid overflow-hidden rounded-3xl bg-card [--lift:1.01] lg:col-span-8 lg:grid-cols-[1fr_1.1fr]">
           <div className="relative min-h-56">
             <Image src={PHOTOS.warehouse.src} alt={PHOTOS.warehouse.alt} fill sizes="(min-width: 1024px) 30vw, 95vw" className="object-cover" />
           </div>
@@ -75,7 +76,7 @@ export function Features() {
         </article>
 
         {/* Orders inbox — lime card with notch, like the app reference */}
-        <article className="relative rounded-3xl bg-lime p-6 text-lime-foreground sm:p-8 lg:col-span-4" style={{ ["--notch-bg" as string]: "var(--background)" }}>
+        <article className="hover-lift relative rounded-3xl bg-lime p-6 text-lime-foreground sm:p-8 lg:col-span-4" style={{ ["--notch-bg" as string]: "var(--background)" }}>
           <div className="notch">
             <span className="flex size-12 items-center justify-center rounded-full bg-card text-foreground">
               <ArrowUpRight className="size-5" aria-hidden />
@@ -98,7 +99,7 @@ export function Features() {
         </article>
 
         {/* POS with photo */}
-        <article className="overflow-hidden rounded-3xl bg-card lg:col-span-4">
+        <article className="hover-lift overflow-hidden rounded-3xl bg-card lg:col-span-4">
           <div className="relative h-52">
             <Image src={PHOTOS.posTablet.src} alt={PHOTOS.posTablet.alt} fill sizes="(min-width: 1024px) 30vw, 95vw" className="object-cover" />
             <span className="absolute bottom-4 left-4 rounded-full bg-card px-3.5 py-1.5 text-sm font-medium tabular">685.000₫, chuyển khoản QR</span>
@@ -110,7 +111,7 @@ export function Features() {
         </article>
 
         {/* Analytics — always-dark card like "Efficiency" */}
-        <article className="rounded-3xl bg-night p-6 text-night-foreground sm:p-8 lg:col-span-4">
+        <article className="hover-lift rounded-3xl bg-night p-6 text-night-foreground sm:p-8 lg:col-span-4">
           <Title>Biết giờ nào đông khách</Title>
           <Body className="text-night-foreground/65">Doanh thu theo kênh, theo giờ, theo nhân viên để xếp ca và nhập hàng.</Body>
           <figure className="mt-6">
@@ -135,7 +136,7 @@ export function Features() {
         </article>
 
         {/* Multi-branch with photo */}
-        <article className="relative min-h-80 overflow-hidden rounded-3xl lg:col-span-4">
+        <article className="hover-lift relative min-h-80 overflow-hidden rounded-3xl lg:col-span-4">
           <Image src={PHOTOS.boutique.src} alt={PHOTOS.boutique.alt} fill sizes="(min-width: 1024px) 30vw, 95vw" className="object-cover" />
           <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-card/95 p-5">
             <Title>Nhiều chi nhánh, một nơi quản lý</Title>
@@ -144,7 +145,7 @@ export function Features() {
         </article>
       </div>
 
-      <ul className="mt-8 flex flex-wrap gap-2 px-3 sm:px-5 lg:px-9">
+      <ul data-reveal-stagger style={revealStagger(60)} className="mt-8 flex flex-wrap gap-2 px-3 sm:px-5 lg:px-9">
         {[
           { icon: Store, label: "Khách quen và tích điểm" },
           { icon: Barcode, label: "In tem mã vạch hàng loạt" },

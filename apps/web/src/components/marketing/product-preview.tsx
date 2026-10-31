@@ -48,7 +48,7 @@ export function ProductPreview() {
 
   return (
     <section id="demo" aria-labelledby="demo-heading" className="px-3 sm:px-5">
-      <div className="mx-auto max-w-[1400px] rounded-3xl bg-board p-3 sm:p-5 lg:p-6">
+      <div data-reveal className="mx-auto max-w-[1400px] rounded-3xl bg-board p-3 sm:p-5 lg:p-6">
         <div className="flex flex-col gap-6 px-3 pt-5 pb-6 sm:px-5 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:pt-8">
           <div className="max-w-2xl">
             <h2 id="demo-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">

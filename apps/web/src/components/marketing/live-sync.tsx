@@ -7,7 +7,7 @@ import { SyncDemo } from "./sync-demo";
 export function LiveSync() {
   return (
     <section aria-labelledby="sync-heading" className="px-3 sm:px-5">
-      <div className="mx-auto grid max-w-[1400px] gap-10 rounded-3xl bg-board p-3 pt-8 sm:p-10 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:p-14">
+      <div data-reveal className="mx-auto grid max-w-[1400px] gap-10 rounded-3xl bg-board p-3 pt-8 sm:p-10 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:p-14">
         <div className="flex flex-col px-3 sm:px-0">
           <h2 id="sync-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
             Đang livestream bán hết hàng? Shopee biết ngay.

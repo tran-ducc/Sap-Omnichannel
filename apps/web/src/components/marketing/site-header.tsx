@@ -33,8 +33,13 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b transition-colors duration-200",
-        scrolled || open ? "border-border bg-background" : "border-transparent bg-background",
+        // Scrolled: frosted bar + soft shadow. Duration/ease match the landing motion (globals.css).
+        "sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-500 ease-(--ease-soft)",
+        open
+          ? "border-border bg-background"
+          : scrolled
+            ? "border-border/60 bg-background/80 shadow-[0_10px_30px_-24px_rgb(18_20_16/0.5)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70"
+            : "border-transparent bg-background",
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-8 px-6 sm:px-8 lg:px-10">

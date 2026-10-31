@@ -5,13 +5,14 @@ import { LogoMark } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PHOTOS } from "./photos";
+import { revealStagger } from "./reveal";
 
 const BARS = [46, 22, 64, 30, 88, 40, 70, 26, 58];
 
 export function CtaBand() {
   return (
     <section id="lien-he" aria-labelledby="cta-heading" className="px-3 pb-20 sm:px-5 lg:pb-28">
-      <div className="mx-auto grid max-w-[1400px] gap-3 lg:grid-cols-[1.6fr_1fr]">
+      <div data-reveal-stagger style={revealStagger(150)} className="mx-auto grid max-w-[1400px] gap-3 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative grid gap-8 overflow-hidden rounded-3xl bg-card p-6 sm:p-10 md:grid-cols-[0.9fr_1.2fr] md:items-center lg:p-12">
           <div>
             <span className="inline-flex items-center gap-2 text-sm font-semibold">

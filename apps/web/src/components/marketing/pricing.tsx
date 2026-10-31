@@ -8,13 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PLANS } from "./content";
+import { revealStagger } from "./reveal";
 
 export function Pricing() {
   const [yearly, setYearly] = useState(true);
 
   return (
     <section id="bang-gia" aria-labelledby="pricing-heading" className="mx-auto max-w-[1400px] px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <div data-reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
           <h2 id="pricing-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
             Giá rõ ràng, không thu theo đơn
@@ -33,14 +34,14 @@ export function Pricing() {
         </div>
       </div>
 
-      <ul className="mt-12 grid gap-3 lg:grid-cols-3">
+      <ul data-reveal-stagger style={revealStagger(120)} className="mt-12 grid gap-3 lg:grid-cols-3">
         {PLANS.map((p) => {
           const price = yearly ? p.yearly : p.monthly;
           return (
             <li
               key={p.name}
               className={cn(
-                "relative flex flex-col rounded-3xl p-6 sm:p-8",
+                "hover-lift relative flex flex-col rounded-3xl p-6 sm:p-8",
                 p.highlighted ? "bg-lime text-lime-foreground" : "bg-card",
               )}
             >

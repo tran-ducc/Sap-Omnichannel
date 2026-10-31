@@ -2,13 +2,14 @@ import Image from "next/image";
 import { STEPS } from "./content";
 import { Sparkle } from "./decor";
 import { PHOTOS } from "./photos";
+import { revealStagger } from "./reveal";
 
 /** Onboarding is a real sequence, so numbered markers are earned here. */
 export function Steps() {
   return (
     <section aria-labelledby="steps-heading" className="mx-auto max-w-[1400px] px-3 py-20 sm:px-5 lg:py-28">
       <div className="grid gap-10 px-3 sm:px-5 lg:grid-cols-[1fr_1.5fr] lg:gap-16 lg:px-9">
-        <div>
+        <div data-reveal>
           <h2 id="steps-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
             Bắt đầu bán trong buổi chiều nay
           </h2>
@@ -20,7 +21,7 @@ export function Steps() {
           </div>
         </div>
 
-        <ol className="relative self-center">
+        <ol data-reveal-stagger style={revealStagger(140)} className="relative self-center">
           {/* vertical connector with star nodes */}
           <span className="absolute top-2 bottom-2 left-[19px] w-px bg-foreground/40" aria-hidden />
           {STEPS.map((s, i) => (
@@ -34,7 +35,7 @@ export function Steps() {
               >
                 {i + 1}
               </span>
-              <div className="rounded-3xl bg-card p-6">
+              <div className="hover-lift rounded-3xl bg-card p-6">
                 <h3 className="text-xl font-normal tracking-[-0.02em]">{s.title}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed font-light text-muted-foreground">{s.body}</p>
               </div>

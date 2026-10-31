@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { CHANNELS, type ChannelKey } from "./content";
 import { ParcelStack, Sparkle } from "./decor";
 import { PHOTOS } from "./photos";
+import { revealDelay, revealStagger } from "./reveal";
 
 const BARS = [38, 52, 30, 70, 46, 84, 58, 40, 66];
 const HERO_CHANNELS: ChannelKey[] = ["pos", "website", "shopee", "lazada", "tiktok", "facebook"];
@@ -20,7 +21,7 @@ export function Hero() {
     <section className="px-3 pt-2 sm:px-5">
       <div className="relative mx-auto grid max-w-[1400px] overflow-hidden rounded-3xl bg-board lg:grid-cols-[1.1fr_1fr]">
         {/* ---------------- Left ---------------- */}
-        <div className="relative z-10 px-6 pt-10 pb-10 sm:px-10 lg:px-14 lg:pt-16 lg:pb-14">
+        <div data-reveal-stagger style={revealStagger(110)} className="relative z-10 px-6 pt-10 pb-10 sm:px-10 lg:px-14 lg:pt-16 lg:pb-14">
           <p className="inline-flex items-center gap-2.5 text-sm text-muted-foreground">
             <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-foreground">
               <RefreshCw className="size-3.5" aria-hidden />
@@ -108,7 +109,7 @@ export function Hero() {
           </a>
 
           {/* Revenue stat card */}
-          <div className="z-10 rounded-2xl bg-card p-5 shadow-[0_20px_40px_-24px_rgb(18_20_16/0.35)] lg:absolute lg:top-[8%] lg:left-[7%] lg:w-[230px]">
+          <div data-reveal style={revealDelay(250)} className="z-10 rounded-2xl bg-card p-5 shadow-[0_20px_40px_-24px_rgb(18_20_16/0.35)] lg:absolute lg:top-[8%] lg:left-[7%] lg:w-[230px]">
             <p className="text-center text-xl font-medium tracking-tight tabular">48.250.000₫</p>
             <p className="mt-0.5 text-center text-xs text-muted-foreground">Doanh thu hôm nay</p>
             <div className="mt-4 flex h-20 items-end justify-center gap-2" aria-hidden>
@@ -123,7 +124,7 @@ export function Hero() {
           </div>
 
           {/* Dark donut card — overlaps the divider like the reference */}
-          <div className="z-10 flex flex-col items-center justify-center rounded-2xl bg-night p-4 text-night-foreground lg:absolute lg:top-[47%] lg:left-[-58px] lg:w-[128px]">
+          <div data-reveal style={revealDelay(400)} className="z-10 flex flex-col items-center justify-center rounded-2xl bg-night p-4 text-night-foreground lg:absolute lg:top-[47%] lg:left-[-58px] lg:w-[128px]">
             <div className="relative size-16">
               <svg viewBox="0 0 48 48" className="size-16 -rotate-90" aria-hidden>
                 <circle cx="24" cy="24" r="19" className="fill-none stroke-night-foreground/15" strokeWidth="5" />
@@ -136,12 +137,12 @@ export function Hero() {
           </div>
 
           {/* Copy beside the arrow */}
-          <p className="col-span-2 text-sm leading-relaxed lg:absolute lg:top-[24%] lg:right-[6%] lg:col-span-1 lg:w-44">
+          <p data-reveal style={revealDelay(350)} className="col-span-2 text-sm leading-relaxed lg:absolute lg:top-[24%] lg:right-[6%] lg:col-span-1 lg:w-44">
             Bán ở quầy hay trên sàn, tồn kho vẫn khớp với <strong className="font-semibold">Sạp</strong>
           </p>
 
           {/* Portrait */}
-          <div className="relative col-span-2 aspect-[6/5] lg:absolute lg:top-[36%] lg:right-[6%] lg:aspect-auto lg:h-[210px] lg:w-[250px]">
+          <div data-reveal style={revealDelay(500)} className="relative col-span-2 aspect-[6/5] lg:absolute lg:top-[36%] lg:right-[6%] lg:aspect-auto lg:h-[210px] lg:w-[250px]">
             <Image src={PHOTOS.owner.src} alt={PHOTOS.owner.alt} fill sizes="(min-width: 1024px) 250px, 90vw" className="rounded-3xl object-cover" priority />
             {/* New-order toast */}
             <div className="absolute -bottom-4 left-4 flex items-center gap-2 rounded-full bg-card py-1.5 pr-3.5 pl-2 text-xs shadow-[0_12px_24px_-12px_rgb(18_20_16/0.4)] lg:-left-16">
@@ -153,7 +154,7 @@ export function Hero() {
           </div>
 
           {/* Store count */}
-          <div className={cn("col-span-2 mt-6 flex items-end justify-between lg:absolute lg:right-[8%] lg:bottom-[6%] lg:left-[8%] lg:mt-0")}>
+          <div data-reveal style={revealDelay(650)} className={cn("col-span-2 mt-6 flex items-end justify-between lg:absolute lg:right-[8%] lg:bottom-[6%] lg:left-[8%] lg:mt-0")}>
             <div>
               <p className="text-6xl font-light tracking-[-0.04em] tabular">
                 12.400<span className="text-3xl">+</span>

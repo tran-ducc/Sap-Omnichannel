@@ -3,6 +3,7 @@ import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_MATRIX } from "./content";
 import { PHOTOS } from "./photos";
+import { revealDelay } from "./reveal";
 
 function Cell({ allowed, className }: { allowed: boolean; className?: string }) {
   return (
@@ -27,7 +28,7 @@ const ROLES = [
 export function Roles() {
   return (
     <section id="phan-quyen" aria-labelledby="roles-heading" className="px-3 sm:px-5">
-      <div className="mx-auto grid max-w-[1400px] gap-10 rounded-3xl bg-night p-6 text-night-foreground sm:p-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16 lg:p-14">
+      <div data-reveal className="mx-auto grid max-w-[1400px] gap-10 rounded-3xl bg-night p-6 text-night-foreground sm:p-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16 lg:p-14">
         <div className="flex flex-col">
           <h2 id="roles-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
             Mỗi người thấy đúng phần việc của mình
@@ -39,7 +40,7 @@ export function Roles() {
             <div className="relative aspect-square overflow-hidden rounded-3xl sm:aspect-auto">
               <Image src={PHOTOS.counter.src} alt={PHOTOS.counter.alt} fill sizes="180px" className="object-cover" />
             </div>
-            <ul className="space-y-2">
+            <ul data-reveal-stagger style={revealDelay(200)} className="space-y-2">
               {ROLES.map((r) => (
                 <li key={r.name} className="rounded-2xl bg-night-foreground/8 p-4">
                   <p className="font-medium">{r.name}</p>
