@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * channel identity by its dot + name (in the title / list), never colour alone.
  */
 export function SyncStatus({ listings, detailed }: { listings: ChannelListingState[]; detailed?: boolean }) {
-  if (!listings.length) return <span className="text-xs text-muted-foreground">Chưa lên sàn</span>;
+  if (!listings.length) return <span className="text-xs text-muted-foreground">Chưa bật kênh online</span>;
   const failed = listings.filter((l) => l.syncStatus === "FAILED");
   const pending = listings.filter((l) => l.syncStatus === "PENDING");
   const summary = failed.length
@@ -16,7 +16,7 @@ export function SyncStatus({ listings, detailed }: { listings: ChannelListingSta
     : pending.length
       ? `Đang đồng bộ ${listings.length - pending.length}/${listings.length}`
       : `Đã khớp ${listings.length} kênh`;
-  const title = listings.map((l) => `${CHANNEL_META[l.channelType].label}: ${l.syncStatus === "SYNCED" ? "đã khớp" : l.syncStatus === "PENDING" ? "đang đồng bộ" : `lỗi${l.lastError ? ` (${l.lastError})` : ""}`}`).join("\n");
+  const title = listings.map((l) => `${CHANNEL_META[l.channelType].label}: ${l.syncStatus === "SYNCED" ? "đã khớp" : l.syncStatus === "PENDING" ? "đang đồng bộ" : `lỗi${l.lastError ? ` (${l.lastError})` : ""}`}`).join("\n") + "\nĐồng bộ giả lập, chưa gửi tới API sàn.";
 
   return (
     <div className="flex flex-col gap-1.5" title={detailed ? undefined : title}>

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { ArrowUpRight, Barcode, BellRing, FileText, History, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CHANNELS, type ChannelKey } from "./content";
+import { CHANNELS, COPY, type ChannelKey } from "./content";
 import { PHOTOS } from "./photos";
 import { revealStagger } from "./reveal";
 
@@ -54,8 +54,8 @@ export function Features() {
             <Image src={PHOTOS.warehouse.src} alt={PHOTOS.warehouse.alt} fill sizes="(min-width: 1024px) 30vw, 95vw" className="object-cover" />
           </div>
           <div className="p-6 sm:p-8">
-            <Title>Tồn kho khớp mọi kênh, mọi chi nhánh</Title>
-            <Body>Bán ở đâu trừ ở đó và đẩy số mới lên tất cả các sàn. Nhập, chuyển và kiểm kho đều có lịch sử.</Body>
+            <Title>Một kho chung cho mọi kênh, mọi chi nhánh</Title>
+            <Body>Bán ở đâu trừ ở đó, quầy và đơn online dùng chung một con số tồn. Nhập, chuyển và kiểm kho đều có lịch sử.</Body>
             <ul className="mt-6 space-y-4" aria-label="Ví dụ tồn kho theo chi nhánh">
               {LOCATIONS.map((l) => (
                 <li key={l.name}>
@@ -83,9 +83,9 @@ export function Features() {
             </span>
           </div>
           <div className="pr-16">
-            <Title>Một hộp đơn cho mọi kênh</Title>
+            <Title>{COPY.inbox.title}</Title>
           </div>
-          <Body className="text-lime-foreground/70">Đơn từ sàn, website và mạng xã hội về chung một danh sách.</Body>
+          <Body className="text-lime-foreground/70">{COPY.inbox.body}</Body>
           <ul className="mt-6 space-y-2" aria-label="Ví dụ hộp đơn">
             {INBOX.map((o) => (
               <li key={o.code} className="flex items-center gap-2.5 rounded-full bg-card/80 px-4 py-2.5 text-sm text-foreground">

@@ -145,7 +145,7 @@ function ChannelsSection() {
   }
 
   return (
-    <Section id="channels-h" title="Kênh bán" description="Kết nối sàn và chọn kho xuất hàng cho từng kênh. Tồn kho được đồng bộ lên kênh đang kết nối." className="xl:col-span-7">
+    <Section id="channels-h" title="Kênh bán" description="Chọn kho xuất hàng cho từng kênh. Các sàn đang chạy giả lập: bật lên thì số tồn được đưa vào hàng đợi đồng bộ thử, chưa gửi tới sàn thật." className="xl:col-span-7">
       {err && (
         <div className="mb-3">
           <InlineError message={err} />
@@ -166,9 +166,13 @@ function ChannelsSection() {
                     {CHANNEL_META[c.type].label.slice(0, 2)}
                   </span>
                   <div className="min-w-0 text-sm">
-                    <p className="truncate font-medium">{c.name}</p>
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="truncate font-medium">{c.name}</span>
+                      {c.simulated && <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber-ink">Giả lập — chưa nối API sàn</span>}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {c.status === "ERROR" ? "Lỗi kết nối" : connected ? "Đang kết nối" : "Đã ngắt"}
+                      {/* A simulated channel is never "connected" to a marketplace; it only runs the mock sync. */}
+                      {c.status === "ERROR" ? "Lỗi đồng bộ" : c.simulated ? (connected ? "Đang chạy đồng bộ giả lập" : "Đã tắt") : connected ? "Đang hoạt động" : "Đã tắt"}
                       {c.type !== "POS" && `, ${formatNumber(c.listings)} sản phẩm`}
                       {c.failedListings > 0 && <span className="text-amber-ink">, {c.failedListings} lỗi đồng bộ</span>}
                       {c.lastSyncedAt && `, đồng bộ ${timeAgo(c.lastSyncedAt)}`}
@@ -198,7 +202,7 @@ function ChannelsSection() {
                       type="button"
                       role="switch"
                       aria-checked={connected}
-                      aria-label={`Kết nối ${c.name}`}
+                      aria-label={c.simulated ? `Bật đồng bộ giả lập cho ${c.name}` : `Bật ${c.name}`}
                       disabled={busy === c.id}
                       onClick={() => update(c, { status: connected ? "DISCONNECTED" : "CONNECTED" })}
                       className={cn("relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors disabled:opacity-50", connected ? "bg-lime" : "bg-border")}

@@ -9,6 +9,13 @@ export interface ChannelAdapter {
   pushStock(input: { channelType: ChannelType; externalId: string; quantity: number; credentials: unknown }): Promise<void>;
 }
 
+/**
+ * No real marketplace adapter exists yet: every marketplace channel runs on
+ * MockChannelAdapter (no OAuth, no order import). The UI shows these channels
+ * as "simulated" so a CONNECTED switch never pretends to be a live API link.
+ */
+export const isSimulatedChannel = (type: ChannelType) => type !== "POS";
+
 /** Simulates a marketplace API: small latency, optional failure rate for testing retries. */
 export class MockChannelAdapter implements ChannelAdapter {
   constructor(private readonly failureRate = Number(process.env.MOCK_CHANNEL_FAILURE_RATE ?? 0)) {}

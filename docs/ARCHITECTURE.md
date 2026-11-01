@@ -40,7 +40,7 @@ omnichannel-retail/
 │               ├── orders/   pos/
 │               ├── customers/ reports/
 │               ├── staff/    notifications/  activity/
-│               └── integrations/       # Adapter Shopee/Lazada/TikTok/Facebook (mock trước)
+│               └── channels/           # ChannelAdapter + MockChannelAdapter, hàng đợi channel-sync
 │
 ├── packages/
 │   └── shared/                 # RBAC permission map, DTO types, zod schemas dùng chung FE/BE
@@ -78,14 +78,14 @@ Nhân viên có thể bị giới hạn theo chi nhánh qua `MembershipLocation`
 
 ## 4. Tồn kho real-time & chống bán vượt
 
-1. Đơn đến (POS / webhook sàn) → `OrdersService.create` trong 1 transaction:
+1. Đơn đến (POS, đơn nhập tay, hoặc nút "Giả lập đơn từ sàn") → `OrdersService.create` trong 1 transaction:
    - `UPDATE inventory_level SET reserved = reserved + n, version = version + 1 WHERE id = ? AND version = ? AND on_hand - reserved >= n`
    - 0 dòng bị ảnh hưởng → retry (tối đa 3) hoặc báo hết hàng.
    - Ghi `InventoryMovement` (sổ cái append-only).
 2. Sau commit: phát event `inventory.changed` → 
    - Socket.io room `tenant:{id}` → dashboard/POS cập nhật ngay.
-   - BullMQ job `channel-sync` (debounce 2s theo variant) → đẩy tồn kho mới lên các sàn qua adapter.
-3. Adapter sàn hiện là mock (`integrations/mock`), cùng interface `ChannelAdapter { pullOrders, pushStock, ack }` để thay bằng API thật sau.
+   - BullMQ job `channel-sync` (debounce 2s theo variant) → đẩy tồn kho mới qua adapter của từng kênh (hiện là mock, chưa tới sàn thật).
+3. Adapter sàn hiện chỉ có `MockChannelAdapter.pushStock` (`modules/channels/channel-adapter.ts`): giả độ trễ và tỉ lệ lỗi để thử retry. Chưa có OAuth, chưa kéo đơn hay sản phẩm từ sàn, chưa ghép listing; interface `ChannelAdapter` hiện chỉ gồm `pushStock`.
 
 ## 5. API REST (tóm tắt)
 
@@ -165,7 +165,9 @@ Một bảng màu dùng chung cho landing page và toàn bộ app. Token nằm d
 
 ### Còn lại / giới hạn đã biết
 
-- POS chưa bán được khi mất mạng (landing page đang nhắc tới tính năng này).
-- Đổi vai trò hoặc khoá tài khoản có hiệu lực khi access token hết hạn (tối đa 15 phút); refresh token bị thu hồi ngay.
-- Lợi nhuận gộp tính theo giá vốn hiện tại, chưa lưu giá vốn tại thời điểm bán.
-- Adapter sàn vẫn là mock.
+- **Kết nối sàn là giả lập.** Không có OAuth, không đăng nhập sàn, không kéo đơn/sản phẩm, không ghép listing theo SKU; `Channel.credentials` chưa dùng và chưa có mã hoá AES-GCM (chỉ là yêu cầu khi làm adapter thật). Phần có thật: kho chung, hàng đợi BullMQ `channel-sync` với trạng thái PENDING/SYNCED/FAILED và retry, chạy trên `MockChannelAdapter`. Cài đặt hiển thị các kênh sàn là "Giả lập — chưa nối API sàn" (`ChannelDetail.simulated`); landing và FAQ đã viết lại cho khớp.
+- POS chưa bán được khi mất mạng (landing cũ ở /landing-cu còn nhắc tới).
+- Landing vẫn hứa vài thứ chưa làm: nhập dữ liệu từ Excel, xuất hoá đơn điện tử, API và webhook (gói Chuỗi).
+- Đổi vai trò hoặc khoá tài khoản có hiệu lực khi access token hết hạn (tối đa 15 phút); refresh token bị thu hồi ngay. Phạm vi chi nhánh của nhân viên thì đọc lại mỗi request nên có hiệu lực ngay.
+- Lợi nhuận gộp dùng giá vốn lưu trên dòng đơn lúc bán (`OrderItem.unitCost`); đơn cũ hơn được ước tính theo giá vốn hiện tại và báo cáo đánh dấu "ước tính".
+- Sự kiện realtime gửi cho cả cửa hàng; giao diện lọc theo chi nhánh nhưng socket chưa tách phòng theo chi nhánh.

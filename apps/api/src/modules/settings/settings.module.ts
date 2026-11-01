@@ -6,6 +6,7 @@ import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } 
 import { CurrentUser } from "../../common/auth.guard";
 import { RequirePermission, type AuthUser } from "../../common/permissions.guard";
 import { PrismaService } from "../../prisma/prisma.module";
+import { isSimulatedChannel } from "../channels/channel-adapter";
 import { ChannelSyncService } from "../channels/channel-sync.service";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
@@ -130,6 +131,7 @@ class SettingsService {
       lastSyncedAt: c.lastSyncedAt?.toISOString() ?? null,
       listings: c._count.listings,
       failedListings: c.listings.length,
+      simulated: isSimulatedChannel(c.type),
     }));
   }
 

@@ -2,13 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Phone } from "lucide-react";
 import { LogoMark } from "@/components/logo";
+import { COPY } from "@/components/marketing/content";
 import { PHOTOS } from "@/components/marketing/photos";
 import { revealDelay } from "@/components/marketing/reveal";
 import { LensFrame, RoundCta } from "./bits";
 
 const FOOTER_LINKS = [
   { title: "Sản phẩm", links: [["Bán tại quầy (POS)", "#demo"], ["Đơn hàng đa kênh", "#tinh-nang"], ["Quản lý tồn kho", "#tinh-nang"], ["Bảng giá", "#bang-gia"]] },
-  { title: "Hỗ trợ", links: [["Trung tâm trợ giúp", "#"], ["Hướng dẫn kết nối sàn", "#"], ["Tài liệu API", "#"], ["Trạng thái hệ thống", "#"]] },
+  { title: "Hỗ trợ", links: [["Trung tâm trợ giúp", "#"], ["Hướng dẫn nhập đơn online", "#"], ["Tài liệu API", "#"], ["Trạng thái hệ thống", "#"]] },
   { title: "Công ty", links: [["Về chúng tôi", "#"], ["Tuyển dụng", "#"], ["Liên hệ", "#lien-he"]] },
 ] as const;
 
@@ -27,7 +28,7 @@ export function LandingCta() {
               trong 10 phút
             </h2>
             <p className="mt-7 max-w-md text-[17px] leading-relaxed font-light text-forest-foreground/75">
-              Tạo cửa hàng, kết nối kênh bán đầu tiên và bán đơn đầu tiên ngay hôm nay. Miễn phí 14 ngày, không cần thẻ ngân hàng.
+              {COPY.ctaBody}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
               <Link href="/register" className="flex h-12 items-center bg-lime px-6 text-sm font-medium text-lime-foreground transition-colors hover:bg-lime/85">

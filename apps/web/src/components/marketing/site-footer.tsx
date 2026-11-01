@@ -25,7 +25,7 @@ const COLUMNS = [
     title: "Hỗ trợ",
     links: [
       { label: "Trung tâm trợ giúp", href: "#" },
-      { label: "Hướng dẫn kết nối sàn", href: "#" },
+      { label: "Hướng dẫn nhập đơn online", href: "#" },
       { label: "Tài liệu API", href: "#" },
       { label: "Trạng thái hệ thống", href: "#" },
     ],

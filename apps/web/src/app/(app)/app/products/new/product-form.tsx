@@ -301,9 +301,9 @@ export function ProductForm() {
         <h2 id="channels" className="text-xl font-normal tracking-[-0.02em]">
           Bán trên kênh
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">Tồn kho sẽ được đẩy lên các kênh đã chọn ngay sau khi lưu. Luôn bán được tại quầy.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Sau khi lưu, tồn kho được đưa vào hàng đợi đồng bộ của các kênh đã chọn (đang giả lập, chưa nối API sàn). Luôn bán được tại quầy.</p>
         {onlineChannels.length === 0 ? (
-          <p className="mt-4 text-sm">Chưa kết nối kênh online nào. Vào Cài đặt để kết nối Shopee, Lazada, TikTok Shop hoặc Facebook.</p>
+          <p className="mt-4 text-sm">Chưa bật kênh online nào. Vào Cài đặt để bật đồng bộ giả lập cho Shopee, Lazada, TikTok Shop hoặc Facebook.</p>
         ) : (
           <ul className="mt-4 flex flex-wrap gap-2">
             {onlineChannels.map((c) => {

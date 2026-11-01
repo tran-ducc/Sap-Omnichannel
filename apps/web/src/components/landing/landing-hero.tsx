@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { SHOP_NAMES } from "@/components/marketing/content";
+import { COPY, SHOP_NAMES } from "@/components/marketing/content";
 import { PHOTOS } from "@/components/marketing/photos";
 import { revealDelay, revealStagger } from "@/components/marketing/reveal";
 import { LensFrame, RoundCta } from "./bits";
@@ -31,7 +31,7 @@ export function LandingHero() {
               Mọi kênh bán.
             </h1>
             <p className="mt-7 max-w-md text-[17px] leading-relaxed font-light text-forest-foreground/75">
-              Sạp gom đơn từ quầy, website, Shopee, Lazada, TikTok Shop và Facebook về một nơi. Có đơn ở kênh nào, tồn kho trừ ngay ở mọi kênh còn lại.
+              {COPY.heroLead}
             </p>
           </div>
 
@@ -56,7 +56,7 @@ export function LandingHero() {
               <Image src={PHOTOS.warehouse.src} alt={PHOTOS.warehouse.alt} fill sizes="(min-width: 1024px) 26vw, 90vw" className="object-cover opacity-85" />
             </div>
             <div className="flex items-end gap-4 p-5">
-              <blockquote className="flex-1 text-sm leading-relaxed">“Không còn cảnh bán lố trên sàn rồi xin lỗi khách nữa.”</blockquote>
+              <blockquote className="flex-1 text-sm leading-relaxed">{COPY.heroQuote}</blockquote>
               <div className="relative size-12 shrink-0 overflow-hidden bg-lime">
                 <Image src={PHOTOS.personHa.src} alt="" fill sizes="48px" className="object-cover" />
               </div>
@@ -80,7 +80,7 @@ export function LandingHero() {
             <p className="text-[clamp(3rem,6vw,5.5rem)] leading-none font-light tracking-[-0.05em] tabular">
               &lt;2<span className="text-[0.45em] tracking-normal">giây</span>
             </p>
-            <p className="mt-3 text-sm text-forest-foreground/70">để tồn kho khớp trên mọi kênh</p>
+            <p className="mt-3 text-sm text-forest-foreground/70">{COPY.syncStat.label}</p>
           </div>
           <p className="col-span-2 max-w-xs text-sm leading-relaxed text-forest-foreground/80 lg:col-span-1 lg:self-start">
             Sạp cùng hơn 12.400 cửa hàng Việt đang thay đổi cách bán hàng: một kho, một hộp đơn, một màn hình báo cáo.

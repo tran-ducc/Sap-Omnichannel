@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowDownRight, Play, RefreshCw } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { CHANNELS, type ChannelKey } from "./content";
+import { CHANNELS, COPY, type ChannelKey } from "./content";
 import { ParcelStack, Sparkle } from "./decor";
 import { PHOTOS } from "./photos";
 import { revealDelay, revealStagger } from "./reveal";
@@ -26,7 +26,7 @@ export function Hero() {
             <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-foreground">
               <RefreshCw className="size-3.5" aria-hidden />
             </span>
-            Tồn kho tự khớp trên 6 kênh bán
+            {COPY.heroBadge}
           </p>
 
           <h1 className="mt-7 text-[2.75rem] leading-[1.04] font-normal tracking-[-0.04em] sm:text-6xl lg:text-[4.4rem]">
@@ -35,7 +35,7 @@ export function Hero() {
             Mọi kênh bán.
           </h1>
           <p className="mt-6 max-w-lg text-[17px] leading-relaxed font-light text-muted-foreground">
-            Sạp gom đơn từ quầy, website, Shopee, Lazada, TikTok Shop và Facebook về một nơi. Có đơn ở kênh nào, tồn kho trừ ngay ở mọi kênh còn lại.
+            {COPY.heroLead}
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -61,9 +61,9 @@ export function Hero() {
               <Sparkle className="absolute -bottom-6 -left-5 hidden sm:block" />
             </div>
             <div className="max-w-xs">
-              <h2 className="text-lg font-medium">Kết nối kênh bán</h2>
+              <h2 className="text-lg font-medium">{COPY.channelCard.title}</h2>
               <p className="mt-1.5 text-sm leading-relaxed font-light text-muted-foreground">
-                Đăng nhập Shopee, Lazada, TikTok Shop, Facebook trong vài cú nhấp. Sạp tự kéo sản phẩm và đơn đang có về một nơi.
+                {COPY.channelCard.body}
               </p>
               <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Các kênh bán được hỗ trợ">
                 {HERO_CHANNELS.map((c) => (

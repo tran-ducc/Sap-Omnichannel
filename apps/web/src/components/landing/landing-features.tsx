@@ -1,16 +1,17 @@
 import Image from "next/image";
 import { Barcode, BellRing, Boxes, ChartColumn, Inbox, Store, type LucideIcon } from "lucide-react";
+import { COPY } from "@/components/marketing/content";
 import { PHOTOS } from "@/components/marketing/photos";
 import { revealStagger } from "@/components/marketing/reveal";
 import { SectionLabel } from "./bits";
 
 const FEATURES: { icon: LucideIcon; title: string; body: string }[] = [
-  { icon: Boxes, title: "Tồn kho khớp mọi kênh", body: "Bán ở đâu trừ ở đó và đẩy số mới lên tất cả các sàn. Nhập, chuyển, kiểm kho đều có lịch sử." },
-  { icon: Inbox, title: "Một hộp đơn cho mọi kênh", body: "Đơn từ sàn, website và mạng xã hội về chung một danh sách, phân công cho từng nhân viên." },
+  { icon: Boxes, title: "Một kho chung cho mọi kênh", body: "Bán ở đâu trừ ở đó, quầy và đơn online dùng chung một con số tồn. Nhập, chuyển, kiểm kho đều có lịch sử." },
+  { icon: Inbox, title: COPY.inbox.title, body: COPY.inbox.body },
   { icon: Barcode, title: "POS ba chạm", body: "Quét mã, chọn cách thanh toán, in hoá đơn 80mm. Chạy trên tablet ngay tại quầy." },
   { icon: ChartColumn, title: "Biết giờ nào đông khách", body: "Doanh thu theo kênh, theo giờ, theo nhân viên để xếp ca và nhập hàng cho đúng." },
   { icon: Store, title: "Nhiều chi nhánh, một nơi", body: "Xem tồn và doanh thu từng cửa hàng, chuyển hàng giữa các chi nhánh trong vài giây." },
-  { icon: BellRing, title: "Báo khi cần chú ý", body: "Hàng sắp hết, đơn mới từ sàn, lệch tiền cuối ca: thông báo đến đúng người, ngay lúc đó." },
+  { icon: BellRing, title: "Báo khi cần chú ý", body: "Hàng sắp hết, đơn online mới, lệch tiền cuối ca: thông báo đến đúng người, ngay lúc đó." },
 ];
 
 /** Cream editorial grid: hairline cells with big index numbers, flanked by two photo tiles. */

@@ -19,10 +19,39 @@ export const NAV_LINKS = [
   { href: "#cau-hoi", label: "Câu hỏi" },
 ];
 
+/**
+ * Copy shared by the current landing (components/landing) and the kept
+ * previous one (/landing-cu). It describes what the product does today:
+ * one stock pool for the counter and online orders, live in-store updates,
+ * and a per-channel sync queue that runs against a mock (no marketplace API,
+ * no order import, no listing matching yet).
+ */
+export const COPY = {
+  heroBadge: "Một kho chung cho quầy và đơn online",
+  heroLead:
+    "Sạp giữ một kho hàng chung cho quầy, website và đơn online. Đơn ở kênh nào cũng trừ vào cùng một con số tồn, mọi màn hình trong cửa hàng thấy ngay.",
+  channelCard: {
+    title: "Kênh bán online",
+    body: "Đơn từ website, Facebook và các sàn được nhập vào cùng hộp đơn với quầy. Kết nối API trực tiếp với sàn chưa có: phần đồng bộ hiện chạy giả lập.",
+  },
+  sync: {
+    title: "Một đơn trừ kho, mọi màn hình thấy cùng một con số.",
+    body: "Đơn chốt ở quầy, trên website hay đơn sàn bạn nhập vào đều trừ vào kho chung. Số tồn mới được xếp vào hàng đợi đồng bộ của từng kênh, có trạng thái chờ, đã khớp hoặc lỗi và tự thử lại khi lỗi.",
+    note: "Hàng đợi đồng bộ hiện chạy giả lập, chưa gửi tới API của sàn. Bấm “Tạo đơn thử” ở khung bên cạnh để xem mô phỏng.",
+  },
+  inbox: {
+    title: "Một hộp đơn cho mọi kênh",
+    body: "Đơn tại quầy, đơn nhập từ website, mạng xã hội và sàn nằm chung một danh sách, phân công cho từng nhân viên.",
+  },
+  ctaBody: "Tạo cửa hàng, nhập sản phẩm và bán đơn đầu tiên ngay hôm nay. Miễn phí 14 ngày, không cần thẻ ngân hàng.",
+  syncStat: { value: "< 2 giây", label: "để số tồn mới hiện trên mọi màn hình trong cửa hàng" },
+  heroQuote: "“Đơn ở quầy hay đơn online đều trừ một kho, không còn mỗi nơi một con số.”",
+};
+
 export const STATS = [
   { value: "1,2 triệu", label: "đơn xử lý mỗi tháng" },
   { value: "6", label: "kênh bán kết nối sẵn" },
-  { value: "< 2 giây", label: "để tồn kho khớp mọi kênh" },
+  COPY.syncStat,
   { value: "99,95%", label: "thời gian hoạt động năm 2026" },
 ];
 
@@ -39,16 +68,16 @@ export const SHOP_NAMES = [
 
 export const STEPS = [
   {
-    title: "Kết nối kênh bán",
-    body: "Đăng nhập Shopee, Lazada, TikTok Shop, Facebook trong vài cú nhấp. Sạp tự kéo sản phẩm và đơn đang có về.",
+    title: "Tạo kho và sản phẩm",
+    body: "Nhập sản phẩm, mẫu mã và tồn đầu kỳ cho từng chi nhánh. Mỗi mẫu mã có một con số tồn cho mỗi kho.",
   },
   {
-    title: "Gộp sản phẩm về một kho",
-    body: "Sạp ghép các listing trùng nhau theo SKU. Mỗi mẫu mã chỉ có một con số tồn kho cho từng chi nhánh.",
+    title: "Bán ở quầy, nhập đơn online",
+    body: "Thu ngân bán bằng POS, đơn từ website, mạng xã hội hay sàn được nhập vào cùng hộp đơn. Đơn nào cũng giữ và trừ hàng đúng kho.",
   },
   {
-    title: "Bán ở đâu cũng được",
-    body: "Khách mua ở quầy hay trên sàn, tồn kho đều trừ ngay. Mọi kênh nhận số mới trong chưa đầy 2 giây.",
+    title: "Theo dõi đồng bộ từng kênh",
+    body: "Mỗi thay đổi tồn được xếp vào hàng đợi đồng bộ cho các kênh đang bật, có trạng thái chờ, đã khớp hoặc lỗi. Hiện là giả lập, chưa nối API sàn.",
   },
 ];
 
@@ -104,7 +133,7 @@ export const PLANS = [
 export const TESTIMONIALS = [
   {
     quote:
-      "Trước đây cuối ngày phải ngồi trừ tay tồn kho Shopee với TikTok, tháng nào cũng bán lố vài chục đơn. Từ khi dùng Sạp thì gần như không còn đơn phải huỷ vì hết hàng.",
+      "Trước đây mỗi chi nhánh một file tồn kho, cuối ngày ngồi cộng trừ tay, tháng nào cũng nhận lố vài chục đơn. Từ khi dùng Sạp, đơn ở quầy hay đơn online đều trừ một kho nên gần như không còn đơn phải huỷ vì hết hàng.",
     name: "Chị Thu Hà",
     role: "Chủ shop Linen House, 2 chi nhánh",
     metric: "Giảm 94% đơn huỷ vì hết hàng",
@@ -131,8 +160,8 @@ export const FAQS = [
     a: "Không. Sạp chạy trên trình duyệt của máy tính, tablet hoặc điện thoại. Máy in hoá đơn, máy quét mã vạch và két tiền thông dụng đều kết nối được qua USB hoặc Bluetooth.",
   },
   {
-    q: "Đồng bộ tồn kho với sàn hoạt động thế nào?",
-    a: "Khi có đơn ở bất kỳ kênh nào, Sạp giữ hàng ngay trong kho chung rồi đẩy số tồn mới lên các sàn còn lại. Thường mất chưa đầy 2 giây. Nếu sàn tạm lỗi, Sạp tự thử lại và báo cho bạn.",
+    q: "Sạp đã kết nối thẳng với Shopee, Lazada, TikTok Shop chưa?",
+    a: "Chưa. Hiện Sạp quản lý một kho chung cho quầy và đơn online bạn nhập vào. Mỗi lần tồn thay đổi, Sạp xếp số mới vào hàng đợi đồng bộ của từng kênh và hiện trạng thái chờ, đã khớp hoặc lỗi, nhưng phía sàn vẫn là giả lập: chưa đăng nhập sàn, chưa kéo đơn hay sản phẩm về. Kết nối API chính thức đang được phát triển.",
   },
   {
     q: "Dữ liệu cũ từ Excel hoặc phần mềm khác có chuyển sang được không?",

@@ -4,6 +4,7 @@ import { Phone } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { COPY } from "./content";
 import { PHOTOS } from "./photos";
 import { revealStagger } from "./reveal";
 
@@ -33,7 +34,7 @@ export function CtaBand() {
               Dọn sạp lên mạng trong 10 phút
             </h2>
             <p className="mt-4 max-w-md text-[17px] leading-relaxed font-light text-muted-foreground">
-              Tạo cửa hàng, kết nối kênh bán đầu tiên và bán đơn đầu tiên ngay hôm nay. Miễn phí 14 ngày, không cần thẻ ngân hàng.
+              {COPY.ctaBody}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link href="/register" className={buttonVariants({ size: "xl" })}>

@@ -265,8 +265,9 @@ model Location {
   @@unique([tenantId, code])
 }
 
-/// A sales channel connection. Marketplace credentials are stored encrypted
-/// (application-level AES-GCM) — never return `credentials` from the API.
+/// A sales channel. Marketplace channels currently sync against a mock adapter:
+/// `credentials` is unused (no OAuth yet). When real adapters land it must hold
+/// only encrypted data (application-level AES-GCM) and never be returned by the API.
 model Channel {
   id                String        @id @default(cuid())
   tenantId          String

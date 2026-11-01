@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { COPY } from "./content";
 import { Sparkle } from "./decor";
 import { PHOTOS } from "./photos";
 import { SyncDemo } from "./sync-demo";
@@ -10,13 +11,12 @@ export function LiveSync() {
       <div data-reveal className="mx-auto grid max-w-[1400px] gap-10 rounded-3xl bg-board p-3 pt-8 sm:p-10 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:p-14">
         <div className="flex flex-col px-3 sm:px-0">
           <h2 id="sync-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
-            Đang livestream bán hết hàng? Shopee biết ngay.
+            {COPY.sync.title}
           </h2>
           <p className="mt-5 max-w-md text-[17px] leading-relaxed font-light text-muted-foreground">
-            Mỗi đơn chốt trên TikTok Shop, ở quầy hay trên website đều trừ vào một kho chung. Các sàn khác nhận số tồn mới trong chưa đầy hai giây, nên không còn
-            cảnh bán lố rồi xin lỗi khách.
+            {COPY.sync.body}
           </p>
-          <p className="mt-4 text-sm text-muted-foreground">Bấm “Tạo đơn thử” ở khung bên cạnh để xem tồn kho đồng bộ.</p>
+          <p className="mt-4 text-sm text-muted-foreground">{COPY.sync.note}</p>
 
           <div className="relative mt-10 aspect-[16/10] overflow-hidden rounded-3xl lg:mt-auto">
             <Image src={PHOTOS.livestream.src} alt={PHOTOS.livestream.alt} fill sizes="(min-width: 1024px) 40vw, 90vw" className="object-cover" />

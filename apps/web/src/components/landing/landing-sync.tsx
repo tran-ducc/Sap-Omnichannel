@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { COPY } from "@/components/marketing/content";
 import { PHOTOS } from "@/components/marketing/photos";
 import { revealDelay } from "@/components/marketing/reveal";
 import { SyncDemo } from "@/components/marketing/sync-demo";
@@ -12,12 +13,12 @@ export function LandingSync() {
         <div data-reveal className="flex flex-col">
           <SectionLabel index="02">Đồng bộ tồn kho</SectionLabel>
           <h2 id="sync-heading" className="mt-10 text-[clamp(2.4rem,4.6vw,4.25rem)] leading-[1.02] font-light tracking-[-0.04em]">
-            Đang livestream bán hết hàng? Shopee biết ngay.
+            {COPY.sync.title}
           </h2>
           <p className="mt-6 max-w-md text-[17px] leading-relaxed font-light text-forest-foreground/75">
-            Mỗi đơn chốt trên TikTok Shop, ở quầy hay trên website đều trừ vào một kho chung. Các sàn khác nhận số tồn mới trong chưa đầy hai giây.
+            {COPY.sync.body}
           </p>
-          <p className="mt-4 text-sm text-forest-foreground/60">Bấm “Tạo đơn thử” ở khung bên cạnh để xem tồn kho đồng bộ.</p>
+          <p className="mt-4 text-sm text-forest-foreground/60">{COPY.sync.note}</p>
           <div className="relative mt-12 aspect-[16/10] overflow-hidden lg:mt-auto">
             <Image src={PHOTOS.livestream.src} alt={PHOTOS.livestream.alt} fill sizes="(min-width: 1024px) 40vw, 90vw" className="object-cover" />
             <span className="absolute top-0 left-0 inline-flex items-center gap-2 bg-forest-deep/85 px-3.5 py-2 text-xs font-medium tracking-[0.1em] uppercase">

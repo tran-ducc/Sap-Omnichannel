@@ -140,6 +140,8 @@ export interface ChannelDetail {
   lastSyncedAt: string | null;
   listings: number;
   failedListings: number;
+  /** True while the channel syncs against the mock adapter (no marketplace API connection). */
+  simulated: boolean;
 }
 
 // ---------------------------------------------------------------------------
