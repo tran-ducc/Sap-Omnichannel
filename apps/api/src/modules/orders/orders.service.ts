@@ -13,6 +13,7 @@ import {
 } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import { assertInScope, locationWhere } from "../../common/location-scope";
+import { loyaltyPointsFor, POS_CHECKOUT_REF_PREFIX } from "../../common/loyalty";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -328,6 +329,7 @@ export class OrdersService {
     }
     if (!can(user.role, TRANSITION_PERMISSION[to])) throw new ForbiddenException("Vai trò của bạn không được thực hiện thao tác này với đơn hàng");
     if (to === "CANCELLED" && !dto.reason) throw new BadRequestException("Vui lòng nhập lý do huỷ đơn");
+    if (to === "RETURNED" && !dto.reason) throw new BadRequestException("Vui lòng nhập lý do trả hàng");
 
     const locationId = order.locationId;
     const changes: StockChange[] = [];
@@ -372,6 +374,21 @@ export class OrdersService {
       if (to === "RETURNED") {
         await move("RETURN", 1, 0, `Khách trả đơn ${order.code}`);
         if (order.paymentStatus === "PAID") data.paymentStatus = "REFUNDED";
+        // cancelReason holds the reason for both outcomes; the status tells which one it is.
+        data.cancelReason = dto.reason;
+        // Take back what the customer was credited for this order. Credit happens only on
+        // reaching COMPLETED (status change, or POS checkout which also adds points), so a
+        // return from SHIPPING has nothing to undo. RETURNED is terminal: this runs once.
+        if (order.status === "COMPLETED" && order.customerId) {
+          const points = order.externalOrderId?.startsWith(POS_CHECKOUT_REF_PREFIX) ? loyaltyPointsFor(num(order.total)) : 0;
+          await tx.$executeRaw`
+            UPDATE "Customer"
+            SET "orderCount" = GREATEST("orderCount" - 1, 0),
+                "totalSpent" = GREATEST("totalSpent" - ${order.total}, 0),
+                "loyaltyPoints" = GREATEST("loyaltyPoints" - ${points}, 0),
+                "updatedAt" = NOW()
+            WHERE id = ${order.customerId}`;
+        }
       }
       if (to === "COMPLETED") {
         data.completedAt = new Date();

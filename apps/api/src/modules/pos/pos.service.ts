@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { can, type OrderEvent, type PosPaymentMethod, type PosProduct, type PosReceipt, type PosShift, type ShiftCloseReport, type StockLevel } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import { inScope, locationWhere } from "../../common/location-scope";
+import { loyaltyPointsFor, POS_CHECKOUT_REF_PREFIX } from "../../common/loyalty";
 import type { AuthUser } from "../../common/permissions.guard";
 import { formatVnd } from "../../common/format";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -12,8 +13,6 @@ import { RealtimeGateway } from "../realtime/realtime.module";
 import type { CheckoutDto, CloseShiftDto, OpenShiftDto, PosProductQuery } from "./pos.dto";
 
 const num = (d: Prisma.Decimal | null | undefined) => (d == null ? 0 : Number(d));
-/** One loyalty point per 10.000₫ spent. */
-const POINTS_PER_VND = 10_000;
 
 @Injectable()
 export class PosService {
@@ -186,7 +185,7 @@ export class PosService {
     const session = await this.requireOpenShift(user, dto.sessionId);
     const channel = await this.prisma.channel.findFirst({ where: { tenantId: user.tenantId, type: "POS" } });
     if (!channel) throw new BadRequestException("Cửa hàng chưa bật kênh bán tại quầy");
-    const ref = `pos:${dto.clientRef}`;
+    const ref = `${POS_CHECKOUT_REF_PREFIX}${dto.clientRef}`;
 
     const existing = await this.prisma.order.findUnique({ where: { channelId_externalOrderId: { channelId: channel.id, externalOrderId: ref } } });
     if (existing) return this.receipt(user, existing.id);
@@ -270,7 +269,7 @@ export class PosService {
         if (customerId) {
           await tx.customer.update({
             where: { id: customerId },
-            data: { orderCount: { increment: 1 }, totalSpent: { increment: total }, lastOrderAt: now, loyaltyPoints: { increment: Math.floor(total / POINTS_PER_VND) } },
+            data: { orderCount: { increment: 1 }, totalSpent: { increment: total }, lastOrderAt: now, loyaltyPoints: { increment: loyaltyPointsFor(total) } },
           });
         }
         await tx.activityLog.create({
@@ -311,7 +310,7 @@ export class PosService {
       locationName: o.location?.name ?? "",
       cashierName: o.createdBy?.fullName ?? "",
       customer: o.customer
-        ? { fullName: o.customer.fullName, phone: o.customer.phone, pointsEarned: Math.floor(total / POINTS_PER_VND), pointsTotal: o.customer.loyaltyPoints }
+        ? { fullName: o.customer.fullName, phone: o.customer.phone, pointsEarned: loyaltyPointsFor(total), pointsTotal: o.customer.loyaltyPoints }
         : null,
       items: o.items.map((i) => ({ name: i.name, sku: i.sku, quantity: i.quantity, unitPrice: num(i.unitPrice), total: num(i.total) })),
       subtotal: num(o.subtotal),

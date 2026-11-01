@@ -19,7 +19,11 @@ import { formatNumber, formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const FLOW: OrderStatus[] = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPING", "COMPLETED"];
-const CANCEL_REASONS = ["Khách đổi ý", "Hết hàng", "Không liên lạc được khách", "Đặt trùng đơn", "Lý do khác"];
+const OTHER = "Lý do khác";
+const REASONS: Partial<Record<OrderStatus, string[]>> = {
+  CANCELLED: ["Khách đổi ý", "Hết hàng", "Không liên lạc được khách", "Đặt trùng đơn", OTHER],
+  RETURNED: ["Hàng lỗi, hư hỏng", "Giao sai mẫu, màu hoặc size", "Khách không nhận hàng", "Khách đổi ý sau khi nhận", OTHER],
+};
 
 function timelineText(action: string, meta: Record<string, unknown> | null) {
   switch (action) {
@@ -41,7 +45,7 @@ export function OrderDetailView({ id }: { id: string }) {
   const [pending, setPending] = useState<OrderStatus | "assign" | null>(null);
   const [actionError, setActionError] = useState("");
   const [confirm, setConfirm] = useState<OrderStatus | null>(null);
-  const [reason, setReason] = useState(CANCEL_REASONS[0]);
+  const [reason, setReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
 
   useRealtime<OrderEvent>("order.updated", (e) => {
@@ -138,7 +142,10 @@ export function OrderDetailView({ id }: { id: string }) {
           </ol>
         ) : (
           <p className="mt-5 rounded-2xl bg-card/70 px-4 py-3 text-sm text-foreground">
-            {data.status === "CANCELLED" ? `Đơn đã huỷ${data.cancelReason ? `: ${data.cancelReason}` : ""}.` : "Khách đã trả hàng, hàng được nhập lại kho."}
+            {/* cancelReason stores the reason for both cancel and return */}
+            {data.status === "CANCELLED"
+              ? `Đơn đã huỷ${data.cancelReason ? `: ${data.cancelReason}` : ""}.`
+              : `Khách đã trả hàng${data.cancelReason ? `: ${data.cancelReason}` : ""}. Hàng được nhập lại kho.`}
           </p>
         )}
 
@@ -162,7 +169,11 @@ export function OrderDetailView({ id }: { id: string }) {
                 key={s}
                 type="button"
                 disabled={!!pending}
-                onClick={() => setConfirm(s)}
+                onClick={() => {
+                  setConfirm(s);
+                  setReason(REASONS[s]?.[0] ?? "");
+                  setOtherReason("");
+                }}
                 className={cn(buttonVariants({ variant: "outline", size: "xl" }), "border-lime-foreground/25 bg-transparent text-lime-foreground hover:bg-card/40")}
               >
                 {TRANSITION_LABEL[s]}
@@ -325,7 +336,7 @@ export function OrderDetailView({ id }: { id: string }) {
             ? data.stockReserved && !data.stockDeducted
               ? "Hàng đang giữ cho đơn sẽ được trả lại để bán tiếp."
               : "Đơn sẽ chuyển sang trạng thái đã huỷ."
-            : "Sản phẩm sẽ được nhập lại kho xuất hàng. Đơn đã thanh toán sẽ chuyển sang đã hoàn tiền."
+            : `Sản phẩm sẽ được nhập lại kho xuất hàng. Đơn đã thanh toán sẽ chuyển sang đã hoàn tiền${data.customer && data.status === "COMPLETED" ? ", và chi tiêu, điểm tích luỹ của khách được trừ lại" : ""}.`
         }
         footer={
           <>
@@ -334,8 +345,8 @@ export function OrderDetailView({ id }: { id: string }) {
             </button>
             <button
               type="button"
-              disabled={!!pending || (confirm === "CANCELLED" && reason === "Lý do khác" && !otherReason.trim())}
-              onClick={() => confirm && transition(confirm, confirm === "CANCELLED" ? (reason === "Lý do khác" ? otherReason.trim() : reason) : undefined)}
+              disabled={!!pending || !reason || (reason === OTHER && !otherReason.trim())}
+              onClick={() => confirm && transition(confirm, reason === OTHER ? otherReason.trim() : reason)}
               className={cn(buttonVariants({ size: "md" }), "bg-destructive text-white hover:bg-destructive/90")}
             >
               {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
@@ -344,14 +355,14 @@ export function OrderDetailView({ id }: { id: string }) {
           </>
         }
       >
-        {confirm === "CANCELLED" && (
+        {confirm && REASONS[confirm] && (
           <div className="space-y-4">
-            <SelectField label="Lý do huỷ" value={reason} onChange={(e) => setReason(e.target.value)}>
-              {CANCEL_REASONS.map((r) => (
+            <SelectField label={confirm === "CANCELLED" ? "Lý do huỷ" : "Lý do trả hàng"} value={reason} onChange={(e) => setReason(e.target.value)}>
+              {REASONS[confirm].map((r) => (
                 <option key={r}>{r}</option>
               ))}
             </SelectField>
-            {reason === "Lý do khác" && (
+            {reason === OTHER && (
               <div>
                 <label htmlFor="other-reason" className="mb-1.5 block text-sm font-medium">
                   Lý do cụ thể
