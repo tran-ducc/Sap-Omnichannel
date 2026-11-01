@@ -447,3 +447,64 @@
     display: none;
   }
 }
+
+/* ------------------------------------------------------------------------ */
+/* Auth pages (login/register/forgot/reset): reference "Orion" clip.        */
+/* Headline words light up one by one; the crosshair over the arch grows in. */
+/* ------------------------------------------------------------------------ */
+@keyframes auth-word {
+  from {
+    opacity: 0.22;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes auth-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes auth-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes auth-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .auth-word {
+    opacity: 0.22;
+    animation: auth-word 700ms var(--ease-soft) forwards;
+    animation-delay: calc(var(--w, 0) * 110ms + 150ms); /* --w = word index */
+  }
+  .auth-rise {
+    animation: auth-rise 800ms var(--ease-soft) both;
+    animation-delay: var(--rise-delay, 500ms);
+  }
+  .auth-line-y,
+  .auth-line-x,
+  .auth-fade {
+    animation: 1400ms var(--ease-soft) var(--draw-delay, 300ms) both;
+  }
+  .auth-line-y {
+    transform-origin: top;
+    animation-name: auth-grow-y;
+  }
+  .auth-line-x {
+    transform-origin: right;
+    animation-name: auth-grow-x;
+  }
+  .auth-fade {
+    animation-name: auth-fade;
+  }
+}

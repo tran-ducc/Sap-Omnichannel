@@ -1,37 +1,37 @@
-import Image from "next/image";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { Sparkle } from "@/components/marketing/decor";
-import { PHOTOS } from "@/components/marketing/photos";
+import { AuthArt } from "@/components/auth/auth-art";
+import { LogoMark } from "@/components/logo";
 
+/**
+ * Auth frame (login, register, forgot/reset password), modelled on the
+ * "Orion" reference: dark forest canvas, form on the left, arch photo with a
+ * crosshair on the right. The `dark` class pins the app's dark tokens inside,
+ * so inputs and buttons look the same whatever theme the visitor uses.
+ */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col p-3 sm:p-5">
-      <div className="mx-auto grid w-full max-w-[1400px] flex-1 overflow-hidden rounded-3xl bg-board lg:grid-cols-[1fr_1fr]">
-        <div className="flex flex-col px-6 py-8 sm:px-12 lg:px-16">
-          <Link href="/" aria-label="Sạp, về trang chủ" className="self-start rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-            <Logo />
+    <div className="dark flex min-h-dvh flex-col bg-[#0b1108] p-3 text-forest-foreground sm:p-5">
+      <div className="relative mx-auto grid w-full max-w-[1400px] flex-1 overflow-hidden rounded-3xl bg-forest-deep ring-1 ring-forest-foreground/10 lg:grid-cols-[1fr_1fr]">
+        {/* Hatched corner texture, bottom-left (reference detail) */}
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 h-48 w-2/3 opacity-[0.07] lg:w-1/2"
+          style={{ backgroundImage: "repeating-linear-gradient(135deg, currentColor 0 1px, transparent 1px 7px)", maskImage: "linear-gradient(to top right, #000, transparent 70%)" }}
+          aria-hidden
+        />
+
+        <div className="relative flex flex-col px-6 py-8 sm:px-12 lg:px-16 xl:px-24">
+          <Link href="/" aria-label="Sạp, về trang chủ" className="inline-flex items-center gap-2 self-start rounded-lg focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none">
+            <LogoMark className="size-7" />
+            <span className="text-lg font-semibold tracking-tight">Sạp</span>
           </Link>
           <main className="flex flex-1 items-center py-10">
             <div className="w-full max-w-md">{children}</div>
           </main>
+          <p className="text-xs text-forest-foreground/40">© 2026 Sạp. Quản lý bán hàng đa kênh.</p>
         </div>
 
-        {/* Photo panel, landing-style: glow, connector, floating cards */}
-        <div className="relative hidden border-l border-border lg:block">
-          <div className="glow-lime absolute top-[20%] left-[15%] h-96 w-96" aria-hidden />
-          <div className="absolute inset-10 overflow-hidden rounded-3xl">
-            <Image src={PHOTOS.owner.src} alt={PHOTOS.owner.alt} fill sizes="45vw" className="object-cover" priority />
-          </div>
-          <div className="absolute bottom-16 left-4 max-w-xs rounded-3xl bg-card p-5 shadow-[0_24px_48px_-24px_rgb(18_20_16/0.4)]">
-            <p className="text-sm leading-relaxed">“Mở máy lên là biết hôm qua kênh nào bán tốt, món nào sắp hết để kịp nhập hàng.”</p>
-            <p className="mt-3 text-xs text-muted-foreground">Chủ shop thời trang, 2 chi nhánh</p>
-          </div>
-          <div className="absolute top-16 right-4 flex items-center gap-2 rounded-full bg-card py-1.5 pr-4 pl-1.5 text-sm shadow-[0_12px_24px_-12px_rgb(18_20_16/0.4)]">
-            <span className="flex size-7 items-center justify-center rounded-full bg-lime text-xs font-semibold text-lime-foreground">+1</span>
-            Đơn mới từ Shopee
-          </div>
-          <Sparkle className="absolute top-8 left-6" />
+        <div className="hidden pt-10 pr-10 lg:block">
+          <AuthArt />
         </div>
       </div>
     </div>

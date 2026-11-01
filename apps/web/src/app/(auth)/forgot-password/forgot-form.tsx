@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Loader2, MailCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/app/form-field";
+import { AuthHeadline, AuthSwitch } from "@/components/auth/auth-bits";
 import { buttonVariants } from "@/components/ui/button";
 import { api, ApiRequestError } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -31,8 +31,7 @@ export function ForgotPasswordForm() {
 
   return (
     <>
-      <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Quên mật khẩu</h1>
-      <p className="mt-2 text-[15px] font-light text-muted-foreground">Nhập email đăng nhập. Chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.</p>
+      <AuthHeadline sub="Nhập email đăng nhập. Chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.">Quên mật khẩu? Lấy lại trong một phút</AuthHeadline>
 
       {sent ? (
         <div role="status" className="mt-8 flex gap-3 rounded-3xl bg-lime-soft p-5 text-sm">
@@ -40,7 +39,7 @@ export function ForgotPasswordForm() {
           <p>{sent}</p>
         </div>
       ) : (
-        <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
+        <form onSubmit={submit} className="auth-rise mt-8 space-y-5" noValidate>
           {error && !error.field("email") && (
             <p role="alert" className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error.message}
@@ -66,12 +65,7 @@ export function ForgotPasswordForm() {
         </form>
       )}
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Nhớ ra mật khẩu?{" "}
-        <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
-          Đăng nhập
-        </Link>
-      </p>
+      <AuthSwitch prompt="Nhớ ra mật khẩu?" href="/login" action="Đăng nhập" className="mt-8" />
     </>
   );
 }

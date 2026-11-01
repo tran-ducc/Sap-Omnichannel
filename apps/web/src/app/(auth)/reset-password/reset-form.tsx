@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/app/form-field";
+import { AuthHeadline } from "@/components/auth/auth-bits";
 import { buttonVariants } from "@/components/ui/button";
 import { api, ApiRequestError } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -38,8 +39,7 @@ export function ResetPasswordForm() {
   if (!token) {
     return (
       <>
-        <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Liên kết không hợp lệ</h1>
-        <p className="mt-2 text-[15px] font-light text-muted-foreground">Liên kết đặt lại mật khẩu bị thiếu mã. Hãy mở lại đúng liên kết, hoặc yêu cầu liên kết mới.</p>
+        <AuthHeadline sub="Liên kết đặt lại mật khẩu bị thiếu mã. Hãy mở lại đúng liên kết, hoặc yêu cầu liên kết mới.">Liên kết này không dùng được</AuthHeadline>
         <Link href="/forgot-password" className={cn(buttonVariants({ size: "xl" }), "mt-8 w-full")}>
           Yêu cầu liên kết mới
         </Link>
@@ -49,8 +49,7 @@ export function ResetPasswordForm() {
 
   return (
     <>
-      <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Đặt mật khẩu mới</h1>
-      <p className="mt-2 text-[15px] font-light text-muted-foreground">Sau khi đổi, mọi thiết bị đang đăng nhập sẽ bị đăng xuất.</p>
+      <AuthHeadline sub="Sau khi đổi, mọi thiết bị đang đăng nhập sẽ bị đăng xuất.">Đặt mật khẩu mới cho tài khoản của bạn</AuthHeadline>
 
       {done ? (
         <>
@@ -63,7 +62,7 @@ export function ResetPasswordForm() {
           </Link>
         </>
       ) : (
-        <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
+        <form onSubmit={submit} className="auth-rise mt-8 space-y-5" noValidate>
           {error && !error.field("newPassword") && (
             <div role="alert" className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error.message}{" "}

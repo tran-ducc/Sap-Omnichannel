@@ -7,6 +7,7 @@ import { ChevronRight, Loader2, Store } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FormField } from "@/components/app/form-field";
 import { useSession } from "@/components/app/session-provider";
+import { AuthHeadline, AuthSwitch } from "@/components/auth/auth-bits";
 import { buttonVariants } from "@/components/ui/button";
 import { ApiRequestError } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -68,8 +69,7 @@ export function LoginForm() {
   if (choice) {
     return (
       <>
-        <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Chọn cửa hàng</h1>
-        <p className="mt-2 text-[15px] font-light text-muted-foreground">Tài khoản {choice.email} thuộc nhiều cửa hàng. Bạn muốn vào cửa hàng nào?</p>
+        <AuthHeadline sub={`Tài khoản ${choice.email} thuộc nhiều cửa hàng. Bạn muốn vào cửa hàng nào?`}>Chọn cửa hàng để làm việc hôm nay</AuthHeadline>
         {error && (
           <div ref={alertRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive outline-none">
             {error.message}
@@ -112,8 +112,7 @@ export function LoginForm() {
 
   return (
     <>
-      <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Đăng nhập</h1>
-      <p className="mt-2 text-[15px] font-light text-muted-foreground">Chào mừng quay lại. Đăng nhập để vào trang quản lý cửa hàng.</p>
+      <AuthHeadline sub="Chào mừng quay lại. Đăng nhập để vào trang quản lý cửa hàng.">Một kho hàng, mọi kênh bán, một lần đăng nhập</AuthHeadline>
 
       {params.get("expired") && !error && (
         <p className="mt-6 rounded-2xl bg-amber-soft px-4 py-3 text-sm text-amber-ink" role="status">
@@ -126,7 +125,7 @@ export function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
+      <form onSubmit={submit} className="auth-rise mt-8 space-y-5" noValidate>
         <FormField
           label="Email"
           type="email"
@@ -160,12 +159,7 @@ export function LoginForm() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Chưa có cửa hàng?{" "}
-        <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
-          Tạo cửa hàng miễn phí
-        </Link>
-      </p>
+      <AuthSwitch prompt="Chưa có cửa hàng?" href="/register" action="Tạo cửa hàng" className="mt-8" />
 
       {DEMO_PASSWORD && (
         <div className="mt-10 rounded-3xl border border-dashed border-foreground/20 p-4">

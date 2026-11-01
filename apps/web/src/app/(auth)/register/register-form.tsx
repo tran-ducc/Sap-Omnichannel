@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { FormField } from "@/components/app/form-field";
 import { useSession } from "@/components/app/session-provider";
+import { AuthHeadline, AuthSwitch } from "@/components/auth/auth-bits";
 import { buttonVariants } from "@/components/ui/button";
 import { ApiRequestError } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -46,8 +46,7 @@ export function RegisterForm() {
 
   return (
     <>
-      <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Tạo cửa hàng</h1>
-      <p className="mt-2 text-[15px] font-light text-muted-foreground">Miễn phí 14 ngày, không cần thẻ ngân hàng. Bạn sẽ là Admin của cửa hàng.</p>
+      <AuthHeadline sub="Miễn phí 14 ngày, không cần thẻ ngân hàng. Bạn sẽ là Admin của cửa hàng.">Dọn sạp lên mạng trong 10 phút</AuthHeadline>
 
       {error && (
         <div ref={summaryRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive outline-none">
@@ -62,7 +61,7 @@ export function RegisterForm() {
         </div>
       )}
 
-      <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
+      <form onSubmit={submit} className="auth-rise mt-8 space-y-5" noValidate>
         <FormField label="Tên cửa hàng" required autoComplete="organization" placeholder="Ví dụ: Linen House" {...bind("shopName")} />
         <FormField label="Họ và tên" required autoComplete="name" {...bind("fullName")} />
         <div className="grid gap-5 sm:grid-cols-2">
@@ -83,12 +82,7 @@ export function RegisterForm() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Đã có tài khoản?{" "}
-        <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
-          Đăng nhập
-        </Link>
-      </p>
+      <AuthSwitch prompt="Đã có tài khoản?" href="/login" action="Đăng nhập" className="mt-8" />
     </>
   );
 }
