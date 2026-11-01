@@ -1,0 +1,35 @@
+# Render Blueprint: API (Docker) + Redis-compatible Key Value for the channel-sync queue.
+# The database is Supabase (DATABASE_URL / DIRECT_URL); the web app is on Vercel.
+# Render → New → Blueprint → pick this repo. Values marked `sync: false` are asked for on first deploy.
+services:
+  - type: web
+    name: sap-api
+    runtime: docker
+    plan: free # sleeps after ~15 min idle; the first request then takes 30–60 s
+    region: singapore
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL # Supabase pooled URL (:6543, ?pgbouncer=true&connection_limit=1)
+        sync: false
+      - key: DIRECT_URL # Supabase direct/session URL (:5432), used by `prisma migrate deploy` at start
+        sync: false
+      - key: WEB_ORIGIN # the Vercel URL, e.g. https://sap-retail.vercel.app (Socket.io CORS)
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: COOKIE_SAME_SITE # lax: the browser reaches the API through the web's /api/v1 proxy
+        value: lax
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: sap-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: sap-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction # BullMQ must not lose queued jobs
+    ipAllowList: [] # internal only: reachable from sap-api, not the internet

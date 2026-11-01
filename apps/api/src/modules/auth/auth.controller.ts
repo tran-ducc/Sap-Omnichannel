@@ -12,10 +12,17 @@ import { AuthService, type IssuedSession } from "./auth.service";
  * returned in the body and kept in memory by the web app.
  */
 const REFRESH_COOKIE = "omni_rt";
+/**
+ * "lax" works when web and API share a site (localhost:3000/4000, or sap.vn and
+ * api.sap.vn). Hosts that give each service its own domain on a public suffix
+ * (e.g. *.up.railway.app) are cross-site: set COOKIE_SAME_SITE=none there.
+ * "none" is only honoured by browsers together with `secure`.
+ */
+const SAME_SITE = process.env.COOKIE_SAME_SITE === "none" ? "none" : "lax";
 const cookieOptions = (expires?: Date): CookieOptions => ({
   httpOnly: true,
-  sameSite: "lax", // web (:3000) and api (:4000) on localhost are same-site
-  secure: process.env.NODE_ENV === "production",
+  sameSite: SAME_SITE,
+  secure: SAME_SITE === "none" || process.env.NODE_ENV === "production",
   path: "/api/v1/auth",
   expires,
 });

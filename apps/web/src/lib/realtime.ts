@@ -15,7 +15,10 @@ const notify = () => listeners.forEach((l) => l());
 
 export function getSocket(): Socket {
   if (socket) return socket;
-  socket = io(`${new URL(API_URL).origin}/realtime`, {
+  // Socket.io connects to the API directly (the /api/v1 rewrite does not carry WebSockets);
+  // it authenticates with the access token, not the cookie, so cross-site is fine.
+  const origin = process.env.NEXT_PUBLIC_REALTIME_URL ?? new URL(API_URL, window.location.origin).origin;
+  socket = io(`${origin}/realtime`, {
     autoConnect: false,
     transports: ["websocket"],
     auth: (cb) => cb({ token: getAccessToken() }),

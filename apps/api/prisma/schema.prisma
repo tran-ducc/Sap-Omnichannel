@@ -11,9 +11,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// DATABASE_URL: what the app uses at runtime (on Supabase: the pooled connection, port 6543).
+// DIRECT_URL: what migrations use (on Supabase: the direct/session connection, port 5432).
+// Locally both point at the Docker Postgres.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
