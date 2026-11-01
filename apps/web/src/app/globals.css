@@ -49,6 +49,16 @@
   --color-amber-soft: var(--amber-soft);
   --color-amber-ink: var(--amber-ink);
   --color-success: var(--success);
+  /* Landing (editorial green) — see components/landing */
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-forest-foreground: var(--forest-foreground);
+  --color-cream: var(--cream);
+  --color-cream-foreground: var(--cream-foreground);
+  --color-cream-muted: var(--cream-muted);
+  --color-paper: var(--paper);
+  --color-paper-foreground: var(--paper-foreground);
+  --color-paper-muted: var(--paper-muted);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -113,6 +123,18 @@
   --amber-soft: #fcecc9;
   --amber-ink: #7a4706;
 
+  /* Landing: deep field green frame + cream paper. Lime stays the one accent. */
+  --forest: #2a4019;
+  --forest-deep: #1b2b10;
+  --forest-foreground: #f4f2e8;
+  --cream: #f5f2e6;
+  --cream-foreground: #22341a;
+  --cream-muted: #5c6a50;
+  /* Accent cards on green (hero stat, recommended plan): cream in both themes */
+  --paper: #f5f2e6;
+  --paper-foreground: #22341a;
+  --paper-muted: #5c6a50;
+
   /* Sales channel identity colours — always paired with the channel name */
   --ch-pos: #121410;
   --ch-website: #6c63d9;
@@ -172,6 +194,13 @@
   --amber: #f5b85c;
   --amber-soft: #3b2c12;
   --amber-ink: #f7d49c;
+
+  --forest: #22351a;
+  --forest-deep: #121c0c;
+  --forest-foreground: #f1efe4;
+  --cream: #161c12;
+  --cream-foreground: #ebe8da;
+  --cream-muted: #a3ad94;
 
   --ch-pos: #e2f76a;
   --ch-website: #9d97f0;
