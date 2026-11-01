@@ -20,13 +20,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const status = exception.getStatus();
-    const raw = exception.getResponse() as string | { message?: string | string[]; error?: string; details?: ApiError["details"] };
+    const raw = exception.getResponse() as string | { message?: string | string[]; error?: string; details?: ApiError["details"]; shops?: ApiError["shops"] };
     const message = typeof raw === "string" ? raw : Array.isArray(raw.message) ? raw.message[0] : (raw.message ?? exception.message);
     const body: ApiError = {
       statusCode: status,
-      error: typeof raw === "object" && raw.details ? "ValidationError" : exception.name.replace(/Exception$/, ""),
+      error: typeof raw === "object" && raw.details ? "ValidationError" : typeof raw === "object" && raw.shops ? "ShopSelectionRequired" : exception.name.replace(/Exception$/, ""),
       message,
       ...(typeof raw === "object" && raw.details ? { details: raw.details } : {}),
+      ...(typeof raw === "object" && raw.shops ? { shops: raw.shops } : {}),
     };
     return res.status(status).json(body);
   }

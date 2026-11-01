@@ -1,7 +1,7 @@
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { ROLE_KEYS, ROLE_PERMISSIONS, type AuthSession, type RoleKey } from "@omni/shared";
+import { ROLE_KEYS, ROLE_PERMISSIONS, type AuthSession, type RoleKey, type ShopChoice } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
@@ -11,6 +11,10 @@ import type { LoginDto, RegisterDto } from "./auth.dto";
 
 const ROLE_NAMES: Record<RoleKey, string> = { ADMIN: "Admin", MANAGER: "Quản lý", STAFF: "Nhân viên" };
 const BCRYPT_ROUNDS = 11;
+const RESET_TTL_MS = 30 * 60 * 1000;
+/** Same answer whether or not the email has an account, so the form can't be used to find accounts. */
+export const FORGOT_PASSWORD_MESSAGE = "Nếu email này có tài khoản Sạp, chúng tôi đã gửi liên kết đặt lại mật khẩu. Liên kết có hiệu lực trong 30 phút.";
+const RESET_INVALID = "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới.";
 
 export interface IssuedSession {
   session: AuthSession;
@@ -33,6 +37,8 @@ function slugify(name: string): string {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -79,6 +85,13 @@ export class AuthService {
     const ok = user && user.isActive && (await bcrypt.compare(dto.password, user.passwordHash));
     if (!ok) throw new UnauthorizedException("Email hoặc mật khẩu không đúng");
 
+    // Several shops and none chosen: list them (only after the password checked out) so the UI can ask.
+    if (!dto.tenantSlug && user.memberships.length > 1) {
+      throw new ConflictException({
+        message: "Tài khoản này thuộc nhiều cửa hàng. Chọn cửa hàng để tiếp tục.",
+        shops: user.memberships.map((m): ShopChoice => ({ id: m.tenant.id, name: m.tenant.name, slug: m.tenant.slug })),
+      });
+    }
     const membership = dto.tenantSlug ? user.memberships.find((m) => m.tenant.slug === dto.tenantSlug) : user.memberships[0];
     if (!membership) throw new ForbiddenException("Tài khoản chưa thuộc cửa hàng nào hoặc đã bị khoá");
     if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException("Cửa hàng đang tạm khoá. Liên hệ chủ cửa hàng.");
@@ -129,6 +142,55 @@ export class AuthService {
     ]);
   }
 
+  /**
+   * Starts a password reset. Always resolves the same way; a link is only made
+   * for an existing, active account. Until email sending exists, the link is
+   * logged by the API outside production (see README).
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user?.isActive) {
+      const raw = randomBytes(32).toString("base64url");
+      await this.prisma.$transaction([
+        // Only the newest link works.
+        this.prisma.passwordResetToken.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } }),
+        this.prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash: sha256(raw), expiresAt: new Date(Date.now() + RESET_TTL_MS) } }),
+      ]);
+      const link = `${this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000"}/reset-password?token=${raw}`;
+      if (process.env.NODE_ENV !== "production") this.logger.log(`Liên kết đặt lại mật khẩu cho ${email}: ${link}`);
+    }
+    return { message: FORGOT_PASSWORD_MESSAGE };
+  }
+
+  /** Sets a new password from a one-time link and signs the user out everywhere. */
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const token = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash: sha256(rawToken) } });
+    if (!token || token.usedAt || token.expiresAt < new Date()) throw new BadRequestException(RESET_INVALID);
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction(async (tx) => {
+      // Conditional claim: two submits of the same link can't both succeed.
+      const { count } = await tx.passwordResetToken.updateMany({ where: { id: token.id, usedAt: null }, data: { usedAt: new Date() } });
+      if (count === 0) throw new BadRequestException(RESET_INVALID);
+      await tx.user.update({ where: { id: token.userId }, data: { passwordHash } });
+      await tx.refreshToken.updateMany({ where: { userId: token.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    });
+  }
+
+  /**
+   * Moves the signed-in user to another of their shops: the refresh token of the
+   * current shop session is revoked and a session for the target shop is issued.
+   */
+  async switchTenant(userId: string, tenantId: string, currentRefreshToken: string | undefined, userAgent?: string, ip?: string): Promise<IssuedSession> {
+    const membership = await this.prisma.membership.findUnique({ where: { userId_tenantId: { userId, tenantId } }, include: { tenant: true } });
+    if (!membership || membership.status !== "ACTIVE") throw new ForbiddenException("Bạn không thuộc cửa hàng này hoặc tài khoản đã bị khoá");
+    if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException("Cửa hàng đang tạm khoá. Liên hệ chủ cửa hàng.");
+    if (currentRefreshToken) {
+      await this.prisma.refreshToken.updateMany({ where: { tokenHash: sha256(currentRefreshToken), userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
+    await this.prisma.activityLog.create({ data: { tenantId, actorId: userId, action: "auth.login", entityType: "User", entityId: userId, ip, metadata: { via: "switch" } } });
+    return this.issue(userId, tenantId, userAgent);
+  }
+
   hashToken(raw: string | undefined) {
     return raw ? sha256(raw) : undefined;
   }
@@ -141,10 +203,17 @@ export class AuthService {
   // -------------------------------------------------------------------------
 
   private async buildSession(userId: string, tenantId: string) {
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_tenantId: { userId, tenantId } },
-      include: { user: true, tenant: true, role: true, locations: true },
-    });
+    const [membership, others] = await Promise.all([
+      this.prisma.membership.findUnique({
+        where: { userId_tenantId: { userId, tenantId } },
+        include: { user: true, tenant: true, role: true, locations: true },
+      }),
+      this.prisma.membership.findMany({
+        where: { userId, status: "ACTIVE" },
+        orderBy: { createdAt: "asc" },
+        select: { tenant: { select: { id: true, name: true, slug: true } } },
+      }),
+    ]);
     if (!membership || membership.status !== "ACTIVE" || !membership.user.isActive) {
       throw new UnauthorizedException("Tài khoản không còn quyền truy cập cửa hàng này");
     }
@@ -153,6 +222,7 @@ export class AuthService {
     const session: Omit<AuthSession, "accessToken"> = {
       user: { id: membership.user.id, email: membership.user.email, fullName: membership.user.fullName, avatarUrl: membership.user.avatarUrl },
       tenant: { id: membership.tenant.id, name: membership.tenant.name, slug: membership.tenant.slug, plan: membership.tenant.plan },
+      shops: others.map((m) => m.tenant),
       role,
       permissions: [...ROLE_PERMISSIONS[role]],
       locationIds: membership.locations.map((l) => l.locationId),

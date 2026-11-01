@@ -61,3 +61,29 @@ export class LoginDto {
   @IsString()
   tenantSlug?: string;
 }
+
+export class ForgotPasswordDto {
+  @Transform(lower)
+  @IsEmail({}, { message: "Email không đúng định dạng" })
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty({ message: "Liên kết đặt lại mật khẩu không hợp lệ" })
+  @MaxLength(200)
+  token: string;
+
+  // Same rules as ChangePasswordDto.newPassword (length rule last: first message wins).
+  @Matches(/(?=.*[A-Za-z])(?=.*\d)/, { message: "Mật khẩu mới cần có cả chữ và số" })
+  @MaxLength(72, { message: "Mật khẩu tối đa 72 ký tự" })
+  @MinLength(8, { message: "Mật khẩu mới cần ít nhất 8 ký tự" })
+  @IsString()
+  newPassword: string;
+}
+
+export class SwitchTenantDto {
+  @IsString()
+  @IsNotEmpty({ message: "Chọn cửa hàng" })
+  tenantId: string;
+}

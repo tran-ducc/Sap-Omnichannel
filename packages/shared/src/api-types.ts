@@ -21,10 +21,19 @@ export interface SessionTenant {
   plan: string;
 }
 
+/** A shop the user can sign in to (ACTIVE membership). */
+export interface ShopChoice {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface AuthSession {
   accessToken: string;
   user: SessionUser;
   tenant: SessionTenant;
+  /** Every shop this user can switch to, including the current one. */
+  shops: ShopChoice[];
   role: RoleKey;
   permissions: Permission[];
   /** Locations the user may work in; empty = all. */
@@ -79,4 +88,6 @@ export interface ApiError {
   error: string;
   message: string;
   details?: { field: string; message: string }[];
+  /** Login without tenantSlug for a user in several shops (error "ShopSelectionRequired"): pick one and log in again. */
+  shops?: ShopChoice[];
 }

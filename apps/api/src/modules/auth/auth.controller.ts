@@ -3,7 +3,7 @@ import type { AuthSession } from "@omni/shared";
 import type { CookieOptions, Request, Response } from "express";
 import { CurrentUser, Public } from "../../common/auth.guard";
 import type { AuthUser } from "../../common/permissions.guard";
-import { ChangePasswordDto, LoginDto, RegisterDto } from "./auth.dto";
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, SwitchTenantDto } from "./auth.dto";
 import { AuthService, type IssuedSession } from "./auth.service";
 
 /**
@@ -67,6 +67,30 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser() user: AuthUser) {
     return this.auth.me(user.userId, user.tenantId);
+  }
+
+  /** Same response whether or not the email exists. */
+  @Public()
+  @Post("forgot-password")
+  @HttpCode(200)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  /** One-time link; on success every session of the user is revoked (sign in again). */
+  @Public()
+  @Post("reset-password")
+  @HttpCode(204)
+  async resetPassword(@Body() dto: ResetPasswordDto, @Res({ passthrough: true }) res: Response) {
+    await this.auth.resetPassword(dto.token, dto.newPassword);
+    res.clearCookie(REFRESH_COOKIE, cookieOptions());
+  }
+
+  /** Switch to another shop of the same user; replaces this device's refresh cookie. */
+  @Post("switch-tenant")
+  @HttpCode(200)
+  async switchTenant(@CurrentUser() user: AuthUser, @Body() dto: SwitchTenantDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<AuthSession> {
+    return this.respond(res, await this.auth.switchTenant(user.userId, dto.tenantId, req.cookies?.[REFRESH_COOKIE], req.headers["user-agent"], req.ip));
   }
 
   /** Keeps the current device signed in; every other session is revoked. */

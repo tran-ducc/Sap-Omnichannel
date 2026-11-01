@@ -1,8 +1,9 @@
 "use client";
 
+import type { ShopChoice } from "@omni/shared";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2, Store } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FormField } from "@/components/app/form-field";
 import { useSession } from "@/components/app/session-provider";
@@ -30,6 +31,8 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ApiRequestError | null>(null);
+  // Account in several shops: the API lists them and we ask which one (credentials kept for the second call).
+  const [choice, setChoice] = useState<{ shops: ShopChoice[]; email: string; password: string } | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const next = safeNext(params.get("next"));
 
@@ -38,22 +41,73 @@ export function LoginForm() {
     if (status === "authenticated") router.replace(next);
   }, [status, next, router]);
 
-  async function submit(e: FormEvent, override?: { email: string; password: string }) {
-    e.preventDefault();
+  async function submit(e: FormEvent | null, override?: { email: string; password: string }, tenantSlug?: string) {
+    e?.preventDefault();
     setPending(true);
     setError(null);
+    const c = override ?? { email, password };
     try {
-      await login(override?.email ?? email, override?.password ?? password);
+      await login(c.email, c.password, tenantSlug);
       // Next keeps this page's state alive (hidden) after navigating away, so
       // clear it now or the form comes back disabled after a logout.
       setPassword("");
+      setChoice(null);
       router.replace(next);
     } catch (err) {
+      if (err instanceof ApiRequestError && err.body.error === "ShopSelectionRequired" && err.body.shops?.length) {
+        setChoice({ shops: err.body.shops, ...c });
+        return;
+      }
       setError(err instanceof ApiRequestError ? err : new ApiRequestError({ statusCode: 0, error: "Unknown", message: "Đăng nhập không thành công. Thử lại sau." }));
       requestAnimationFrame(() => alertRef.current?.focus());
     } finally {
       setPending(false);
     }
+  }
+
+  if (choice) {
+    return (
+      <>
+        <h1 className="text-4xl leading-tight font-normal tracking-[-0.035em]">Chọn cửa hàng</h1>
+        <p className="mt-2 text-[15px] font-light text-muted-foreground">Tài khoản {choice.email} thuộc nhiều cửa hàng. Bạn muốn vào cửa hàng nào?</p>
+        {error && (
+          <div ref={alertRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive outline-none">
+            {error.message}
+          </div>
+        )}
+        <ul className="mt-8 space-y-2" aria-label="Cửa hàng của bạn">
+          {choice.shops.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => submit(null, { email: choice.email, password: choice.password }, s.slug)}
+                className="flex w-full cursor-pointer items-center gap-3 rounded-3xl bg-card p-4 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none disabled:opacity-60"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lime text-lime-foreground">
+                  <Store className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{s.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{s.slug}</span>
+                </span>
+                {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ChevronRight className="size-4 text-muted-foreground" aria-hidden />}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={() => {
+            setChoice(null);
+            setError(null);
+          }}
+          className="mt-6 w-full cursor-pointer text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Đăng nhập bằng tài khoản khác
+        </button>
+      </>
+    );
   }
 
   return (
@@ -95,6 +149,11 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={error?.field("password")}
         />
+        <p className="-mt-2 text-right text-sm">
+          <Link href="/forgot-password" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">
+            Quên mật khẩu?
+          </Link>
+        </p>
         <button type="submit" disabled={pending} className={cn(buttonVariants({ size: "xl" }), "w-full")}>
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
           {pending ? "Đang đăng nhập" : "Đăng nhập"}

@@ -34,6 +34,22 @@ Khi `NEXT_PUBLIC_DEMO_PASSWORD` có trong `apps/web/.env.local`, trang `/login` 
 
 Cửa hàng thử tạo qua `/register` khi kiểm thử: `owner@nhamay.test` / `Nhamay2026x` (“Tiệm Gốm Nhà Mây”, không có dữ liệu).
 
+### Quên mật khẩu (chưa gửi email thật)
+
+`/forgot-password` gọi `POST /auth/forgot-password`. API luôn trả cùng một câu, dù email có tài khoản hay không. Với email có thật, API tạo liên kết dùng một lần, hết hạn sau 30 phút (chỉ lưu bản băm của mã).
+
+Chưa có dịch vụ gửi email: **ngoài production, liên kết được in ra log của API**, dạng
+
+```
+[AuthService] Liên kết đặt lại mật khẩu cho ten@cuahang.vn: http://localhost:3000/reset-password?token=…
+```
+
+Mở liên kết đó để đặt mật khẩu mới; mọi phiên đăng nhập của tài khoản bị thu hồi. Trên production không in log này, nên cần nối dịch vụ email trước khi dùng thật. Phần đầu của liên kết lấy từ `WEB_ORIGIN`.
+
+### Tài khoản thuộc nhiều cửa hàng
+
+Khi một email là thành viên của nhiều cửa hàng, đăng nhập mà không chọn cửa hàng sẽ nhận `409 ShopSelectionRequired` kèm danh sách cửa hàng, và trang `/login` hỏi người dùng chọn. Trong ứng dụng, ô cửa hàng ở đầu thanh bên cho phép đổi cửa hàng (`POST /auth/switch-tenant`).
+
 ## Ghi chú
 
 - Ảnh trên landing là ảnh Unsplash tạm (`apps/web/src/components/marketing/photos.ts`); tên, lời nhận xét và số liệu là minh hoạ.

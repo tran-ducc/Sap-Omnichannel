@@ -11,7 +11,7 @@ omnichannel-retail/
 │   │   └── src/
 │   │       ├── app/
 │   │       │   ├── (marketing)/        # Landing page, pricing… (public, SSG)
-│   │       │   ├── (auth)/             # /login, /register, /forgot-password
+│   │       │   ├── (auth)/             # /login, /register, /forgot-password, /reset-password
 │   │       │   └── (app)/app/          # Dashboard sau đăng nhập (sidebar layout)
 │   │       │       ├── dashboard/
 │   │       │       ├── products/  inventory/
@@ -97,7 +97,7 @@ Tiền tố `/api/v1`. Validation bằng `class-validator` (DTO) — lỗi trả
 
 | Module | Endpoint chính |
 |---|---|
-| auth | `POST /auth/register` (tạo tenant + admin), `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me` |
+| auth | `POST /auth/register` (tạo tenant + admin), `POST /auth/login` (nhiều cửa hàng mà không gửi `tenantSlug` → `409 ShopSelectionRequired` kèm `shops`), `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/switch-tenant` (đổi cửa hàng, thu hồi refresh token cũ), `POST /auth/forgot-password` (luôn cùng câu trả lời; liên kết in ra log ngoài production), `POST /auth/reset-password` (mã một lần, 30 phút, thu hồi mọi phiên), `POST /auth/change-password` |
 | products | `GET/POST /products`, `GET/PATCH/DELETE /products/:id`, `POST /products/:id/variants` |
 | inventory | `GET /inventory?locationId=&lowStock=`, `POST /inventory/adjust`, `POST /inventory/transfer`, `GET /inventory/:variantId/movements` |
 | orders | `GET /orders?channel=&status=&from=&to=`, `POST /orders`, `GET /orders/:id`, `PATCH /orders/:id/status`, `POST /orders/:id/assign` |
@@ -166,6 +166,7 @@ Một bảng màu dùng chung cho landing page và toàn bộ app. Token nằm d
 ### Còn lại / giới hạn đã biết
 
 - **Kết nối sàn là giả lập.** Không có OAuth, không đăng nhập sàn, không kéo đơn/sản phẩm, không ghép listing theo SKU; `Channel.credentials` chưa dùng và chưa có mã hoá AES-GCM (chỉ là yêu cầu khi làm adapter thật). Phần có thật: kho chung, hàng đợi BullMQ `channel-sync` với trạng thái PENDING/SYNCED/FAILED và retry, chạy trên `MockChannelAdapter`. Cài đặt hiển thị các kênh sàn là "Giả lập — chưa nối API sàn" (`ChannelDetail.simulated`); landing và FAQ đã viết lại cho khớp.
+- Quên mật khẩu chưa gửi email: liên kết đặt lại chỉ được in ra log API ngoài production. Chưa giới hạn số lần yêu cầu (rate limit) cho đăng nhập và quên mật khẩu.
 - POS chưa bán được khi mất mạng (landing cũ ở /landing-cu còn nhắc tới).
 - Landing vẫn hứa vài thứ chưa làm: nhập dữ liệu từ Excel, xuất hoá đơn điện tử, API và webhook (gói Chuỗi).
 - Đổi vai trò hoặc khoá tài khoản có hiệu lực khi access token hết hạn (tối đa 15 phút); refresh token bị thu hồi ngay. Phạm vi chi nhánh của nhân viên thì đọc lại mỗi request nên có hiệu lực ngay.

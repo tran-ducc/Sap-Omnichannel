@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Lock, LogOut, Menu, X } from "lucide-react";
+import { ChevronsUpDown, Loader2, Lock, LogOut, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -151,7 +151,7 @@ function Sidebar() {
         <Link href="/app/dashboard" className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
           <Logo />
         </Link>
-        <p className="mt-3 truncate text-sm font-medium">{session.tenant.name}</p>
+        <ShopSwitcher />
       </div>
 
       {groups.map(({ g, items }) => (
@@ -235,6 +235,67 @@ function Drawer({ onClose }: { onClose: () => void }) {
         </button>
         <Sidebar />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Current shop name, or a picker when the account belongs to several shops.
+ * Switching issues a session for the other shop, then reloads the app so no
+ * page keeps data (or a realtime room) from the previous shop.
+ */
+function ShopSwitcher() {
+  const { session, switchShop } = useSession();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  if (!session) return null;
+  if (session.shops.length <= 1) return <p className="mt-3 truncate text-sm font-medium">{session.tenant.name}</p>;
+
+  async function change(tenantId: string) {
+    if (tenantId === session?.tenant.id) return;
+    setPending(true);
+    setError("");
+    try {
+      await switchShop(tenantId);
+      // Deliberately a full reload, not router.push: kept-alive pages and the realtime room still belong to the old shop.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/app/dashboard");
+    } catch (e) {
+      setError((e as Error).message);
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <label htmlFor="shop-switcher" className="sr-only">
+        Cửa hàng đang làm việc
+      </label>
+      <div className="relative">
+        <select
+          id="shop-switcher"
+          value={session.tenant.id}
+          disabled={pending}
+          onChange={(e) => change(e.target.value)}
+          className="h-9 w-full cursor-pointer appearance-none truncate rounded-full border border-input bg-card pr-8 pl-3 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/30 disabled:opacity-60"
+        >
+          {session.shops.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        {pending ? (
+          <Loader2 className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 animate-spin" aria-hidden />
+        ) : (
+          <ChevronsUpDown className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        )}
+      </div>
+      {error && (
+        <p role="alert" className="mt-1.5 px-1 text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

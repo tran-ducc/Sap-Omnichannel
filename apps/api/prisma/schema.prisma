@@ -172,6 +172,7 @@ model User {
 
   memberships    Membership[]
   refreshTokens  RefreshToken[]
+  passwordResets PasswordResetToken[]
   notifications  Notification[]
   activityLogs   ActivityLog[]
   ordersCreated  Order[]             @relation("OrderCreatedBy")
@@ -228,6 +229,21 @@ model MembershipLocation {
 
 /// Rotating refresh token (stored hashed). `tenantId` is the shop the session
 /// was opened for, so a refresh re-issues an access token for the same shop.
+/// One-time password reset link. Only the SHA-256 of the token is stored;
+/// it expires after 30 minutes and is marked used on success.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model RefreshToken {
   id        String    @id @default(cuid())
   userId    String
