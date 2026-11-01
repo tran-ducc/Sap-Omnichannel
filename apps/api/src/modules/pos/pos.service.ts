@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { can, type OrderEvent, type PosPaymentMethod, type PosProduct, type PosReceipt, type PosShift, type ShiftCloseReport, type StockLevel } from "@omni/shared";
 import { Prisma } from "@prisma/client";
+import { inScope, locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { formatVnd } from "../../common/format";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -37,12 +38,7 @@ export class PosService {
 
   /** Staff may only open a shift at the locations they are assigned to (none assigned = any). */
   async open(user: AuthUser, dto: OpenShiftDto): Promise<PosShift> {
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_tenantId: { userId: user.userId, tenantId: user.tenantId } },
-      include: { locations: true },
-    });
-    const allowed = membership?.locations.map((l) => l.locationId) ?? [];
-    if (allowed.length && !allowed.includes(dto.locationId)) throw new ForbiddenException("Bạn chỉ được mở ca tại chi nhánh được phân công");
+    if (!inScope(user, dto.locationId)) throw new ForbiddenException("Bạn chỉ được mở ca tại chi nhánh được phân công");
     const location = await this.prisma.location.findFirst({ where: { id: dto.locationId, tenantId: user.tenantId, isActive: true } });
     if (!location) throw new NotFoundException("Không tìm thấy chi nhánh");
     if (location.type !== "STORE") throw new BadRequestException("Chỉ mở ca bán hàng tại cửa hàng, không mở tại kho");
@@ -128,6 +124,8 @@ export class PosService {
     if (!s) throw new NotFoundException("Không tìm thấy ca bán hàng");
     if (s.openedById !== user.userId) throw new ForbiddenException("Ca này không phải của bạn");
     if (s.closedAt) throw new ConflictException("Ca đã đóng. Mở ca mới để bán tiếp.");
+    // The assignment may have been narrowed after the shift was opened.
+    if (!inScope(user, s.locationId)) throw new ForbiddenException("Bạn chỉ được bán tại chi nhánh được phân công");
     return s;
   }
 
@@ -291,14 +289,14 @@ export class PosService {
 
     await this.inventory.afterCommit(user.tenantId, changes, user.userId);
     const receipt = await this.receipt(user, orderId, dto.received);
-    const event: OrderEvent = { orderId, code: receipt.code, channelType: "POS", status: "COMPLETED", total, assignedToId: null, kind: "created" };
+    const event: OrderEvent = { orderId, code: receipt.code, channelType: "POS", status: "COMPLETED", total, assignedToId: null, locationId: session.locationId, kind: "created" };
     this.realtime.emitToTenant(user.tenantId, "order.created", event);
     return receipt;
   }
 
   async receipt(user: AuthUser, orderId: string, received?: number): Promise<PosReceipt> {
     const o = await this.prisma.order.findFirst({
-      where: { id: orderId, tenantId: user.tenantId, channelType: "POS" },
+      where: { id: orderId, tenantId: user.tenantId, channelType: "POS", ...locationWhere(user) },
       include: { items: true, payments: true, customer: true, location: true, createdBy: { select: { fullName: true } }, tenant: { select: { name: true } } },
     });
     if (!o) throw new NotFoundException("Không tìm thấy hoá đơn");

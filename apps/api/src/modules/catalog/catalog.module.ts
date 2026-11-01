@@ -56,7 +56,8 @@ class LookupController {
   @Get("locations")
   locations(@CurrentUser() user: AuthUser): Promise<LocationSummary[]> {
     return this.prisma.location.findMany({
-      where: { tenantId: user.tenantId, isActive: true },
+      // Branch-limited staff only get their own branches, so every picker in the UI hides the rest.
+      where: { tenantId: user.tenantId, isActive: true, ...(user.locationIds && { id: { in: user.locationIds } }) },
       select: { id: true, name: true, code: true, type: true },
       orderBy: [{ type: "asc" }, { code: "asc" }],
     });

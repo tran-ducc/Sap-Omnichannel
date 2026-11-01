@@ -36,7 +36,7 @@ export function InventoryView() {
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { can } = useSession();
+  const { can, inScope } = useSession();
 
   const locationId = params.get("location") ?? "";
   const lowOnly = params.get("low") === "1";
@@ -77,6 +77,8 @@ export function InventoryView() {
   const summaryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useRealtime<InventoryChangedEvent>("inventory.changed", (e) => {
+    // Events are shop-wide; branch-limited staff ignore other branches.
+    if (!inScope(e.level.locationId)) return;
     mutate((d) => ({ ...d, items: d.items.map((r) => (r.variantId === e.variantId ? { ...r, levels: patchLevels(r.levels, e.level) } : r)) }));
     setFlash((f) => ({ ...f, [e.variantId]: Date.now() }));
     const row = data?.items.find((r) => r.variantId === e.variantId);

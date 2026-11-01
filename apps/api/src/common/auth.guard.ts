@@ -3,6 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { RoleKey } from "@omni/shared";
 import type { Request } from "express";
+import { PrismaService } from "../prisma/prisma.module";
 import type { AuthUser } from "./permissions.guard";
 
 export const IS_PUBLIC_KEY = "isPublic";
@@ -31,6 +32,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,12 +43,27 @@ export class JwtAuthGuard implements CanActivate {
     const [scheme, token] = (req.headers.authorization ?? "").split(" ");
     if (scheme !== "Bearer" || !token) throw new UnauthorizedException("Phiên đăng nhập không hợp lệ");
 
+    let payload: AccessTokenPayload;
     try {
-      const payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
-      req.user = { userId: payload.sub, tenantId: payload.tid, role: payload.role };
-      return true;
+      payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
     } catch {
       throw new UnauthorizedException("Phiên đăng nhập đã hết hạn");
     }
+    req.user = { userId: payload.sub, tenantId: payload.tid, role: payload.role, locationIds: await this.branchScope(payload) };
+    return true;
+  }
+
+  /**
+   * Branch scope is read from the membership on each STAFF request rather than
+   * put in the JWT: existing tokens keep working and a narrowed assignment takes
+   * effect immediately. ADMIN/MANAGER manage the whole shop and skip the query.
+   */
+  private async branchScope(p: AccessTokenPayload): Promise<string[] | null> {
+    if (p.role !== "STAFF") return null;
+    const rows = await this.prisma.membershipLocation.findMany({
+      where: { membership: { userId: p.sub, tenantId: p.tid } },
+      select: { locationId: true },
+    });
+    return rows.length ? rows.map((r) => r.locationId) : null; // none assigned = all branches
   }
 }

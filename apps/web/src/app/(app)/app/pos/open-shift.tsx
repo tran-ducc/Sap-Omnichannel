@@ -17,10 +17,10 @@ const QUICK = [500_000, 1_000_000, 2_000_000];
 
 /** Start of a cashier's shift: pick the store and count the opening float. */
 export function OpenShift({ onOpened }: { onOpened: (s: PosShift) => void }) {
-  const { session } = useSession();
+  const { inScope } = useSession();
+  // /locations is already limited to the staff member's branches; inScope is a second guard.
   const { data: locations = [] } = useApiQuery<LocationSummary[]>("/locations");
-  // Stores only; staff limited to their assigned branches (none assigned = all).
-  const stores = locations.filter((l) => l.type === "STORE" && (!session?.locationIds.length || session.locationIds.includes(l.id)));
+  const stores = locations.filter((l) => l.type === "STORE" && inScope(l.id));
   const [picked, setPicked] = useState("");
   const locationId = picked || stores[0]?.id || "";
   const [cash, setCash] = useState("");

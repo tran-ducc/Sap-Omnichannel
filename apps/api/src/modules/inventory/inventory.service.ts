@@ -9,6 +9,7 @@ import {
 } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { assertInScope, locationSql, locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { PrismaService } from "../../prisma/prisma.module";
 import { ChannelSyncService } from "../channels/channel-sync.service";
@@ -146,6 +147,7 @@ export class InventoryService {
   }
 
   async adjust(user: AuthUser, dto: AdjustStockDto) {
+    assertInScope(user, dto.locationId);
     await this.assertOwned(user.tenantId, dto.variantId, [dto.locationId]);
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -181,6 +183,7 @@ export class InventoryService {
 
   async transfer(user: AuthUser, dto: TransferStockDto) {
     if (dto.fromLocationId === dto.toLocationId) throw new BadRequestException("Kho chuyển đi và kho nhận phải khác nhau");
+    assertInScope(user, dto.fromLocationId, dto.toLocationId);
     await this.assertOwned(user.tenantId, dto.variantId, [dto.fromLocationId, dto.toLocationId]);
     const referenceId = randomUUID();
     const note = dto.note?.trim() || null;
@@ -218,7 +221,8 @@ export class InventoryService {
 
   async list(user: AuthUser, q: InventoryQuery): Promise<InventoryList> {
     const search = q.q?.trim();
-    const levelScope: Prisma.InventoryLevelWhereInput = q.locationId ? { locationId: q.locationId } : {};
+    // Restricted staff only see (and filter by) their own branches.
+    const levelScope: Prisma.InventoryLevelWhereInput = locationWhere(user, q.locationId);
     const where: Prisma.ProductVariantWhereInput = {
       tenantId: user.tenantId,
       isActive: true,
@@ -276,7 +280,7 @@ export class InventoryService {
   }
 
   private async summary(user: AuthUser, locationId?: string) {
-    const loc = locationId ? Prisma.sql`AND il."locationId" = ${locationId}` : Prisma.empty;
+    const loc = locationSql(user, Prisma.sql`il."locationId"`, locationId);
     const [row] = await this.prisma.$queryRaw<{ sku: number; on_hand: number; low: number; out: number; value: number }[]>`
       SELECT COUNT(DISTINCT v.id)::int AS sku,
              COALESCE(SUM(il."onHand"), 0)::int AS on_hand,
@@ -300,7 +304,7 @@ export class InventoryService {
   async movements(user: AuthUser, variantId: string): Promise<MovementItem[]> {
     await this.assertOwned(user.tenantId, variantId, []);
     const rows = await this.prisma.inventoryMovement.findMany({
-      where: { tenantId: user.tenantId, variantId },
+      where: { tenantId: user.tenantId, variantId, ...locationWhere(user) },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: { location: { select: { name: true } }, createdBy: { select: { fullName: true } } },

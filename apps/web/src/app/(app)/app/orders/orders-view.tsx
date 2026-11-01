@@ -35,7 +35,7 @@ export function OrdersView() {
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { can } = useSession();
+  const { can, inScope } = useSession();
 
   const status = (params.get("status") as OrderStatus | null) ?? null;
   const channel = (params.get("channel") as ChannelType | null) ?? null;
@@ -72,6 +72,7 @@ export function OrdersView() {
   const reloadTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoRefresh = page === 1 && !q;
   useRealtime<OrderEvent>("order.created", (e) => {
+    if (!inScope(e.locationId)) return; // other branch: not visible to branch-limited staff
     setIncoming((list) => [e, ...list].slice(0, 5));
     if (autoRefresh) {
       setFlash((s) => new Set(s).add(e.orderId));

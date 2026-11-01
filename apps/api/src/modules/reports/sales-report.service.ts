@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type { ChannelType, ReportGroupBy, SalesReport } from "@omni/shared";
 import { Prisma } from "@prisma/client";
+import { locationSql } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay, vnDateKey } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -35,7 +36,8 @@ export class SalesReportService {
     const prevFrom = new Date(from.getTime() - spanDays * DAY);
 
     const t = user.tenantId;
-    const loc = q.locationId ? Prisma.sql`AND o."locationId" = ${q.locationId}` : Prisma.empty;
+    // Only unrestricted roles reach this route today, but keep it branch-safe anyway.
+    const loc = locationSql(user, Prisma.sql`o."locationId"`, q.locationId);
     const range = (a: Date, b: Date) => Prisma.sql`o."tenantId" = ${t} AND o."placedAt" >= ${a} AND o."placedAt" < ${b} ${loc}`;
     const unit = Prisma.raw(`'${groupBy}'`); // whitelisted above
 

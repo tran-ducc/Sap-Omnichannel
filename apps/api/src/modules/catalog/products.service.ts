@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { can, type Page, type ProductDetail, type ProductListItem } from "@omni/shared";
 import { Prisma } from "@prisma/client";
+import { locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { PrismaService } from "../../prisma/prisma.module";
 import { ChannelSyncService } from "../channels/channel-sync.service";
@@ -55,7 +56,7 @@ export class ProductsService {
             where: { isActive: true },
             select: {
               price: true,
-              inventory: { select: { onHand: true, reorderPoint: true } },
+              inventory: { where: locationWhere(user), select: { onHand: true, reorderPoint: true } },
               listings: { select: { channel: { select: { type: true } } } },
             },
           },
@@ -94,7 +95,7 @@ export class ProductsService {
         category: { select: { name: true } },
         variants: {
           orderBy: { sku: "asc" },
-          include: { inventory: true, listings: { include: { channel: { select: { type: true } } } } },
+          include: { inventory: { where: locationWhere(user) }, listings: { include: { channel: { select: { type: true } } } } },
         },
       },
     });

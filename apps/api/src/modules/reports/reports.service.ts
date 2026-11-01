@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { can, type ChannelType, type DashboardOverview, type DashboardRange } from "@omni/shared";
 import { Prisma } from "@prisma/client";
+import { locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay, startOfVnMonth, vnDateKey } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -32,9 +33,10 @@ export class ReportsService {
     const prevFrom = new Date(from.getTime() - (range === "today" ? 86_400_000 : now.getTime() - from.getTime()));
     const prevTo = range === "today" ? new Date(now.getTime() - 86_400_000) : from; // "today" compares with the same hours yesterday
 
+    // Detailed sections below only run for unrestricted roles; the summary follows the staff branch scope.
     const scope: Prisma.OrderWhereInput = detailed
-      ? { tenantId: user.tenantId }
-      : { tenantId: user.tenantId, OR: [{ createdById: user.userId }, { assignedToId: user.userId }] };
+      ? { tenantId: user.tenantId, ...locationWhere(user) }
+      : { tenantId: user.tenantId, OR: [{ createdById: user.userId }, { assignedToId: user.userId }], ...locationWhere(user) };
 
     const [cur, prev, recentOrders] = await Promise.all([
       this.periodStats(scope, from, now),

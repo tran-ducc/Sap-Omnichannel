@@ -130,5 +130,7 @@ export interface OrderEvent {
   status: OrderStatus;
   total: number;
   assignedToId: string | null;
+  /** Fulfilment branch; lets branch-limited staff ignore other branches' events. */
+  locationId: string | null;
   kind: "created" | "updated";
 }

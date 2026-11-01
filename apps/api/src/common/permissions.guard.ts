@@ -12,6 +12,8 @@ export interface AuthUser {
   userId: string;
   tenantId: string;
   role: RoleKey;
+  /** Branches a STAFF member is limited to; null = no limit. See common/location-scope.ts. */
+  locationIds: string[] | null;
 }
 
 /**

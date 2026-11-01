@@ -27,7 +27,7 @@ function patchLevels(levels: StockLevel[], next: StockLevel) {
 }
 
 export function ProductDetailView({ id }: { id: string }) {
-  const { can } = useSession();
+  const { can, inScope } = useSession();
   const router = useRouter();
   const { data, error, reload, mutate } = useApiQuery<ProductDetail>(`/products/${id}`);
   const { data: locations = [] } = useApiQuery<LocationSummary[]>("/locations");
@@ -41,7 +41,7 @@ export function ProductDetailView({ id }: { id: string }) {
   const patchVariant = (variantId: string, fn: (v: VariantDetail) => VariantDetail) =>
     mutate((d) => ({ ...d, variants: d.variants.map((v) => (v.id === variantId ? fn(v) : v)) }));
 
-  useRealtime<InventoryChangedEvent>("inventory.changed", (e) => patchVariant(e.variantId, (v) => ({ ...v, levels: patchLevels(v.levels, e.level) })));
+  useRealtime<InventoryChangedEvent>("inventory.changed", (e) => inScope(e.level.locationId) && patchVariant(e.variantId, (v) => ({ ...v, levels: patchLevels(v.levels, e.level) })));
   useRealtime<ChannelSyncedEvent>("channel.synced", (e) => patchVariant(e.variantId, (v) => ({ ...v, listings: e.listings })));
 
   if (error && !data) {

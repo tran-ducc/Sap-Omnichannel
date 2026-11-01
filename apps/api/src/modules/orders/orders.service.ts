@@ -12,6 +12,7 @@ import {
   type StockLevel,
 } from "@omni/shared";
 import { Prisma } from "@prisma/client";
+import { assertInScope, locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
@@ -43,9 +44,14 @@ export class OrdersService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  /** Staff see orders they created or were assigned; managers see everything. */
+  /**
+   * Staff see orders they created or were assigned; managers see everything.
+   * Branch-limited staff additionally only see orders of their branches (orders
+   * without a locationId drop out, since `in` never matches null).
+   */
   private scope(user: AuthUser): Prisma.OrderWhereInput {
-    return can(user.role, "order:read_all") ? { tenantId: user.tenantId } : { tenantId: user.tenantId, OR: [{ createdById: user.userId }, { assignedToId: user.userId }] };
+    const own: Prisma.OrderWhereInput = can(user.role, "order:read_all") ? {} : { OR: [{ createdById: user.userId }, { assignedToId: user.userId }] };
+    return { tenantId: user.tenantId, ...own, ...locationWhere(user) };
   }
 
   // -------------------------------------------------------------------------
@@ -199,6 +205,7 @@ export class OrdersService {
     if (!locationId || !(await this.prisma.location.count({ where: { id: locationId, tenantId, isActive: true } }))) {
       throw new BadRequestException("Chọn kho xuất hàng cho đơn");
     }
+    if (user) assertInScope(user, locationId);
 
     const variantIds = [...new Set(dto.items.map((i) => i.variantId))];
     const variants = await this.prisma.productVariant.findMany({
@@ -399,7 +406,7 @@ export class OrdersService {
   }
 
   async assign(user: AuthUser, id: string, assigneeId: string | null | undefined): Promise<OrderDetail> {
-    const order = await this.prisma.order.findFirst({ where: { id, tenantId: user.tenantId }, select: { id: true, assignedToId: true } });
+    const order = await this.prisma.order.findFirst({ where: { id, tenantId: user.tenantId, ...locationWhere(user) }, select: { id: true, assignedToId: true } });
     if (!order) throw new NotFoundException("Không tìm thấy đơn hàng");
     let name: string | null = null;
     if (assigneeId) {
@@ -418,9 +425,9 @@ export class OrdersService {
   }
 
   private async emit(tenantId: string, kind: OrderEvent["kind"], orderId: string) {
-    const o = await this.prisma.order.findUnique({ where: { id: orderId }, select: { id: true, code: true, channelType: true, status: true, total: true, assignedToId: true } });
+    const o = await this.prisma.order.findUnique({ where: { id: orderId }, select: { id: true, code: true, channelType: true, status: true, total: true, assignedToId: true, locationId: true } });
     if (!o) return;
-    const event: OrderEvent = { orderId: o.id, code: o.code, channelType: o.channelType as ChannelType, status: o.status, total: num(o.total), assignedToId: o.assignedToId, kind };
+    const event: OrderEvent = { orderId: o.id, code: o.code, channelType: o.channelType as ChannelType, status: o.status, total: num(o.total), assignedToId: o.assignedToId, locationId: o.locationId, kind };
     this.realtime.emitToTenant(tenantId, kind === "created" ? "order.created" : "order.updated", event);
   }
 }

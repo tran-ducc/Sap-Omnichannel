@@ -13,6 +13,8 @@ interface SessionContextValue {
   register: (input: { shopName: string; fullName: string; email: string; password: string; phone?: string }) => Promise<AuthSession>;
   logout: () => Promise<void>;
   can: (permission: Permission) => boolean;
+  /** Whether a branch is within the user's scope: only STAFF with assigned branches are limited (mirrors the API). */
+  inScope: (locationId: string | null | undefined) => boolean;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -61,7 +63,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [apply]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ status, session, login, register, logout, can: (p) => !!session?.permissions.includes(p) }),
+    () => ({
+      status,
+      session,
+      login,
+      register,
+      logout,
+      can: (p) => !!session?.permissions.includes(p),
+      inScope: (id) => session?.role !== "STAFF" || !session.locationIds.length || (!!id && session.locationIds.includes(id)),
+    }),
     [status, session, login, register, logout],
   );
 
