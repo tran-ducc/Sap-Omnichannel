@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Phone } from "lucide-react";
-import { LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 import { COPY } from "@/components/marketing/content";
 import { PHOTOS } from "@/components/marketing/photos";
 import { revealDelay } from "@/components/marketing/reveal";
@@ -57,10 +57,7 @@ export function LandingCta() {
       <footer className="border-t border-forest-foreground/15 bg-forest-deep text-forest-foreground">
         <div className="mx-auto grid max-w-[1440px] gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.3fr_2fr] lg:px-12">
           <div>
-            <span className="inline-flex items-center gap-2.5">
-              <LogoMark className="size-7" />
-              <span className="text-xl font-semibold tracking-tight">Sạp</span>
-            </span>
+            <Logo onDark />
             <p className="mt-4 max-w-xs text-sm leading-relaxed font-light text-forest-foreground/65">
               Phần mềm quản lý bán hàng đa kênh cho cửa hàng Việt: quầy, website, sàn thương mại điện tử và mạng xã hội.
             </p>

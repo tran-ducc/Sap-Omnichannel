@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSession } from "@/components/app/session-provider";
-import { LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 import { NAV_LINKS } from "@/components/marketing/content";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -41,9 +41,9 @@ export function LandingHeader() {
       )}
     >
       <div className="flex h-16 items-stretch sm:h-20">
-        <Link href="/" aria-label="Sạp, về trang chủ" className="flex items-center gap-2.5 px-5 focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none sm:px-8">
-          <LogoMark className="size-7" />
-          <span className="text-xl font-semibold tracking-tight">Sạp</span>
+        <Link href="/" aria-label="SapOmni, về trang chủ" className="flex items-center px-5 focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none sm:px-8">
+          {/* Header always sits on the dark hero or a dark bar */}
+          <Logo onDark />
         </Link>
 
         <nav aria-label="Điều hướng chính" className="ml-auto hidden md:flex">

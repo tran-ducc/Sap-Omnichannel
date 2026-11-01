@@ -11,7 +11,7 @@ export function AuthHeadline({ children, sub }: { children: string; sub?: string
   const words = children.split(" ");
   return (
     <div>
-      <h1 className="text-[clamp(2rem,3vw,2.6rem)] leading-[1.08] font-normal tracking-[-0.035em] text-forest-foreground">
+      <h1 className="text-[clamp(2rem,3vw,2.6rem)] leading-[1.08] font-normal tracking-[-0.035em] text-cream-foreground">
         {words.map((w, i) => (
           <span key={i} className="auth-word" style={{ "--w": i } as CSSProperties}>
             {w}
@@ -19,7 +19,7 @@ export function AuthHeadline({ children, sub }: { children: string; sub?: string
           </span>
         ))}
       </h1>
-      {sub && <p className="auth-rise mt-3 text-[15px] font-light text-forest-foreground/60 [--rise-delay:300ms]">{sub}</p>}
+      {sub && <p className="auth-rise mt-3 text-[15px] font-light text-cream-muted [--rise-delay:300ms]">{sub}</p>}
     </div>
   );
 }
@@ -27,11 +27,11 @@ export function AuthHeadline({ children, sub }: { children: string; sub?: string
 /** Bordered strip below the form: "Đã có tài khoản? [Đăng nhập]". */
 export function AuthSwitch({ prompt, href, action, className }: { prompt: string; href: string; action: string; className?: string }) {
   return (
-    <div className={cn("auth-rise flex items-center justify-between gap-3 rounded-2xl border border-forest-foreground/15 px-4 py-3 text-sm [--rise-delay:750ms]", className)}>
-      <span className="text-forest-foreground/70">{prompt}</span>
+    <div className={cn("auth-rise flex items-center justify-between gap-3 rounded-2xl border border-cream-foreground/15 px-4 py-3 text-sm [--rise-delay:750ms]", className)}>
+      <span className="text-cream-muted">{prompt}</span>
       <Link
         href={href}
-        className="shrink-0 rounded-lg border border-forest-foreground/25 px-3 py-1.5 text-sm font-medium text-forest-foreground transition-colors hover:border-lime hover:text-lime focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none"
+        className="shrink-0 rounded-lg border border-cream-foreground/25 px-3 py-1.5 text-sm font-medium text-cream-foreground transition-colors hover:border-lime hover:bg-lime hover:text-lime-foreground focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none"
       >
         {action}
       </Link>

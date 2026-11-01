@@ -57,6 +57,8 @@
   --color-cream-foreground: var(--cream-foreground);
   --color-cream-muted: var(--cream-muted);
   --color-paper: var(--paper);
+  --color-brand-sap: var(--brand-sap);
+  --color-brand-omni: var(--brand-omni);
   --color-paper-foreground: var(--paper-foreground);
   --color-paper-muted: var(--paper-muted);
 
@@ -135,6 +137,10 @@
   --paper-foreground: #22341a;
   --paper-muted: #5c6a50;
 
+  /* SapOmni wordmark: "Sap" deep green, "Omni" yellow-green (darkened enough to read on light backgrounds) */
+  --brand-sap: #2a4019;
+  --brand-omni: #8fb021;
+
   /* Sales channel identity colours — always paired with the channel name */
   --ch-pos: #121410;
   --ch-website: #6c63d9;
@@ -201,6 +207,9 @@
   --cream: #161c12;
   --cream-foreground: #ebe8da;
   --cream-muted: #a3ad94;
+
+  --brand-sap: #f1efe4;
+  --brand-omni: #e2f76a;
 
   --ch-pos: #e2f76a;
   --ch-website: #9d97f0;

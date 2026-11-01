@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Phone } from "lucide-react";
-import { LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { COPY } from "./content";
@@ -16,9 +16,7 @@ export function CtaBand() {
       <div data-reveal-stagger style={revealStagger(150)} className="mx-auto grid max-w-[1400px] gap-3 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative grid gap-8 overflow-hidden rounded-3xl bg-card p-6 sm:p-10 md:grid-cols-[0.9fr_1.2fr] md:items-center lg:p-12">
           <div>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold">
-              <LogoMark className="size-6" /> Sạp
-            </span>
+            <Logo />
             <div className="mt-8 flex h-36 items-end gap-3" aria-hidden>
               {BARS.map((h, i) => (
                 <span

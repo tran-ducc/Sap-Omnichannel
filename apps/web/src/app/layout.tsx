@@ -14,11 +14,11 @@ const lexend = Lexend({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sạp — Quản lý bán hàng đa kênh trên một nền tảng",
-    template: "%s | Sạp",
+    default: "SapOmni — Quản lý bán hàng đa kênh trên một nền tảng",
+    template: "%s | SapOmni",
   },
   description:
-    "Gom đơn từ quầy, website, Shopee, Lazada, TikTok Shop và Facebook về một nơi. Tồn kho đồng bộ tức thì, POS nhanh, báo cáo rõ ràng.",
+    "Một kho hàng chung cho quầy và đơn online: POS nhanh, hộp đơn đa kênh, tồn kho theo chi nhánh và báo cáo rõ ràng.",
 };
 
 export const viewport: Viewport = {

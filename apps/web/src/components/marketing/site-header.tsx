@@ -43,7 +43,7 @@ export function SiteHeader() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-8 px-6 sm:px-8 lg:px-10">
-        <Link href="/" aria-label="Sạp, về trang chủ" className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+        <Link href="/" aria-label="SapOmni, về trang chủ" className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
           <Logo />
         </Link>
 
