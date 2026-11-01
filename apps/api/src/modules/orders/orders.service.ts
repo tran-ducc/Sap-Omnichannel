@@ -234,7 +234,8 @@ export class OrdersService {
     const lines = dto.items.map((i) => {
       const v = byId.get(i.variantId)!;
       const unitPrice = canPrice && i.unitPrice !== undefined ? i.unitPrice : Number(v.price);
-      return { variantId: v.id, sku: v.sku, name: `${v.product.name}, ${v.name}`, quantity: i.quantity, unitPrice, total: unitPrice * i.quantity };
+      // unitCost snapshots today's cost price so later cost changes don't rewrite past profit.
+      return { variantId: v.id, sku: v.sku, name: `${v.product.name}, ${v.name}`, quantity: i.quantity, unitPrice, unitCost: v.costPrice, total: unitPrice * i.quantity };
     });
     const subtotal = lines.reduce((s, l) => s + l.total, 0);
     const discountTotal = Math.min(dto.discountTotal ?? 0, subtotal);

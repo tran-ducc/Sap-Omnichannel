@@ -514,6 +514,8 @@ model OrderItem {
   name      String
   quantity  Int
   unitPrice Decimal @db.Decimal(14, 2)
+  /// Variant cost price at the moment of sale; null when unknown (no cost set, or lines older than this column).
+  unitCost  Decimal? @db.Decimal(14, 2)
   discount  Decimal @default(0) @db.Decimal(14, 2)
   total     Decimal @db.Decimal(14, 2)
 

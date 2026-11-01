@@ -209,7 +209,8 @@ export class PosService {
 
     const lines = variants.map((v) => {
       const q = qty.get(v.id)!;
-      return { variantId: v.id, sku: v.sku, name: `${v.product.name}, ${v.name}`, quantity: q, unitPrice: Number(v.price), total: Number(v.price) * q };
+      // unitCost snapshots today's cost price so later cost changes don't rewrite past profit.
+      return { variantId: v.id, sku: v.sku, name: `${v.product.name}, ${v.name}`, quantity: q, unitPrice: Number(v.price), unitCost: v.costPrice, total: Number(v.price) * q };
     });
     const subtotal = lines.reduce((s, l) => s + l.total, 0);
     const discount = Math.min(dto.discount ?? 0, subtotal);

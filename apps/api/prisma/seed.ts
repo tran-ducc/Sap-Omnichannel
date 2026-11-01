@@ -163,7 +163,7 @@ async function main() {
     categories[name] = (await prisma.category.create({ data: { tenantId: tenant.id, name } })).id;
   }
 
-  type V = { id: string; sku: string; name: string; productName: string; price: number; weight: number };
+  type V = { id: string; sku: string; name: string; productName: string; price: number; cost: number; weight: number };
   const variants: V[] = [];
   const inventory: Prisma.InventoryLevelCreateManyInput[] = [];
   for (const [pi, p] of CATALOG.entries()) {
@@ -196,7 +196,7 @@ async function main() {
             costPrice: p.cost,
           },
         });
-        variants.push({ id: v.id, sku, name: v.name, productName: p.name, price: p.price, weight: POPULARITY[pi] * (size === "M" ? 1.5 : 1) });
+        variants.push({ id: v.id, sku, name: v.name, productName: p.name, price: p.price, cost: p.cost, weight: POPULARITY[pi] * (size === "M" ? 1.5 : 1) });
         for (const loc of [q1, hk, wh]) {
           inventory.push({
             tenantId: tenant.id,
@@ -285,7 +285,7 @@ async function main() {
       for (const { v, qty } of chosen.values()) {
         const total = v.price * qty;
         subtotal += total;
-        items.push({ id: randomUUID(), orderId: id, variantId: v.id, sku: v.sku, name: `${v.productName}, ${v.name}`, quantity: qty, unitPrice: v.price, total });
+        items.push({ id: randomUUID(), orderId: id, variantId: v.id, sku: v.sku, name: `${v.productName}, ${v.name}`, quantity: qty, unitPrice: v.price, unitCost: v.cost, total });
       }
       const shippingFee = isPos ? 0 : subtotal >= 500_000 ? 0 : 25_000;
       const discount = rand() < 0.15 ? Math.round((subtotal * 0.1) / 1000) * 1000 : 0;

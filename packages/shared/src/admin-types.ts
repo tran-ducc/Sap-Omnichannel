@@ -13,7 +13,10 @@ export interface SalesSummary {
   revenue: number;
   orders: number;
   aov: number;
-  /** Revenue − cost of goods (at current cost price). */
+  /**
+   * Revenue − cost of goods. Uses the cost snapshotted on each order line at
+   * sale time; lines sold before that existed fall back to today's cost price.
+   */
   grossProfit: number;
   margin: number;
   itemsSold: number;
@@ -21,6 +24,8 @@ export interface SalesSummary {
   cancelRate: number;
   returned: number;
   newCustomers: number;
+  /** Units whose cost had no snapshot (older lines): their profit is an estimate at today's cost price. */
+  costEstimatedItems: number;
 }
 
 export interface SalesReport {
@@ -33,7 +38,8 @@ export interface SalesReport {
   series: { period: string; revenue: number; orders: number; byChannel: Partial<Record<ChannelType, number>> }[];
   channels: { channel: ChannelType; orders: number; revenue: number; share: number }[];
   locations: { locationId: string; name: string; orders: number; revenue: number }[];
-  products: { name: string; sku: string; quantity: number; revenue: number; profit: number }[];
+  /** `profitEstimated`: some units of this product had no cost snapshot (see SalesSummary.costEstimatedItems). */
+  products: { name: string; sku: string; quantity: number; revenue: number; profit: number; profitEstimated: boolean }[];
   categories: { name: string; quantity: number; revenue: number }[];
   staff: { userId: string; fullName: string; avatarUrl: string | null; posOrders: number; posRevenue: number; handledOrders: number }[];
   /** heatmap[weekday][hour] = orders; weekday 0 = Monday (Vietnam time). */

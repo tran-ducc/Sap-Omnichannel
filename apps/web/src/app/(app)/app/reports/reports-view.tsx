@@ -83,8 +83,8 @@ export function ReportsView() {
     if (!data) return;
     downloadCsv(
       `san-pham-ban-chay-${data.from}-${data.to}.csv`,
-      ["Sản phẩm", "SKU", "Số lượng", "Doanh thu", "Lợi nhuận gộp"],
-      data.products.map((p) => [p.name, p.sku, p.quantity, Math.round(p.revenue), Math.round(p.profit)]),
+      ["Sản phẩm", "SKU", "Số lượng", "Doanh thu", "Lợi nhuận gộp", "Lợi nhuận ước tính"],
+      data.products.map((p) => [p.name, p.sku, p.quantity, Math.round(p.revenue), Math.round(p.profit), p.profitEstimated ? "Có" : "Không"]),
     );
   }
 
@@ -140,7 +140,13 @@ export function ReportsView() {
           {/* KPIs */}
           <section aria-label="Chỉ số chính" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Kpi label="Doanh thu" value={formatVND(data.summary.revenue)} cur={data.summary.revenue} prev={data.previous.revenue} dark />
-            <Kpi label="Lợi nhuận gộp" value={formatVND(data.summary.grossProfit)} cur={data.summary.grossProfit} prev={data.previous.grossProfit} note={`Biên ${(data.summary.margin * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`} />
+            <Kpi
+              label={data.summary.costEstimatedItems ? "Lợi nhuận gộp (ước tính)" : "Lợi nhuận gộp"}
+              value={formatVND(data.summary.grossProfit)}
+              cur={data.summary.grossProfit}
+              prev={data.previous.grossProfit}
+              note={`Biên ${(data.summary.margin * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%${data.summary.costEstimatedItems ? `, ${formatNumber(data.summary.costEstimatedItems)} sp tính theo giá vốn hiện tại` : ""}`}
+            />
             <Kpi label="Đơn hàng" value={formatNumber(data.summary.orders)} cur={data.summary.orders} prev={data.previous.orders} note={`${formatNumber(data.summary.itemsSold)} sản phẩm`} />
             <Kpi label="Giá trị đơn trung bình" value={formatVND(data.summary.aov)} cur={data.summary.aov} prev={data.previous.aov} note={`${formatNumber(data.summary.newCustomers)} khách mới, huỷ ${(data.summary.cancelRate * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`} />
           </section>
@@ -257,14 +263,18 @@ export function ReportsView() {
                         <td className="px-3 py-2.5 text-right font-medium tabular">{formatVND(p.revenue)}</td>
                         <td className="rounded-r-full px-3 py-2.5 text-right tabular">
                           {formatVND(p.profit)}
-                          <span className="block text-xs text-muted-foreground">{p.revenue ? Math.round((p.profit / p.revenue) * 100) : 0}%</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {p.revenue ? Math.round((p.profit / p.revenue) * 100) : 0}%{p.profitEstimated && ", ước tính"}
+                          </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">Lợi nhuận gộp tính theo giá vốn hiện tại của sản phẩm.</p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Lợi nhuận gộp tính theo giá vốn lưu lại lúc bán. Đơn bán trước khi có tính năng này chưa lưu giá vốn nên được ước tính theo giá vốn hiện tại.
+              </p>
             </section>
 
             {/* Categories */}

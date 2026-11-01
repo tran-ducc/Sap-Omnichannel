@@ -15,10 +15,21 @@ const vnDay = (key: string) => {
 };
 const isDateKey = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
+// Money stays Decimal through the sums below; num() converts once, when the response is built.
+type Money = Prisma.Decimal;
+const ZERO = new Prisma.Decimal(0);
+const num = (d: Money | null | undefined) => (d == null ? 0 : Number(d));
+const sum = (xs: Money[]) => xs.reduce((s, x) => s.add(x), ZERO);
+
 /** Orders that count as sales. */
 const VALID = Prisma.sql`o.status NOT IN ('CANCELLED', 'RETURNED')`;
 /** placedAt in Vietnam local time (stored as UTC without zone). */
 const LOCAL = Prisma.sql`(o."placedAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh'`;
+/**
+ * Cost of a line: the cost price snapshotted when it was sold. Lines older than
+ * the snapshot column fall back to today's cost price (flagged as estimated).
+ */
+const LINE_COST = Prisma.sql`oi.quantity * COALESCE(oi."unitCost", v."costPrice", 0)`;
 
 @Injectable()
 export class SalesReportService {
@@ -42,33 +53,33 @@ export class SalesReportService {
     const unit = Prisma.raw(`'${groupBy}'`); // whitelisted above
 
     const [totals, prevTotals, cogs, prevCogs, series, locations, products, categories, staff, heat, newCustomers] = await Promise.all([
-      this.prisma.$queryRaw<{ status: string; n: number; revenue: number }[]>`
-        SELECT o.status, COUNT(*)::int AS n, COALESCE(SUM(o.total), 0)::float AS revenue FROM "Order" o WHERE ${range(from, to)} GROUP BY o.status`,
-      this.prisma.$queryRaw<{ n: number; revenue: number }[]>`
-        SELECT COUNT(*)::int AS n, COALESCE(SUM(o.total), 0)::float AS revenue FROM "Order" o WHERE ${range(prevFrom, from)} AND ${VALID}`,
+      this.prisma.$queryRaw<{ status: string; n: number; revenue: Money }[]>`
+        SELECT o.status, COUNT(*)::int AS n, COALESCE(SUM(o.total), 0) AS revenue FROM "Order" o WHERE ${range(from, to)} GROUP BY o.status`,
+      this.prisma.$queryRaw<{ n: number; revenue: Money }[]>`
+        SELECT COUNT(*)::int AS n, COALESCE(SUM(o.total), 0) AS revenue FROM "Order" o WHERE ${range(prevFrom, from)} AND ${VALID}`,
       this.cogs(range(from, to)),
       this.cogs(range(prevFrom, from)),
-      this.prisma.$queryRaw<{ period: Date; channel: ChannelType; revenue: number; n: number }[]>`
-        SELECT date_trunc(${unit}, ${LOCAL}) AS period, o."channelType" AS channel, SUM(o.total)::float AS revenue, COUNT(*)::int AS n
+      this.prisma.$queryRaw<{ period: Date; channel: ChannelType; revenue: Money; n: number }[]>`
+        SELECT date_trunc(${unit}, ${LOCAL}) AS period, o."channelType" AS channel, SUM(o.total) AS revenue, COUNT(*)::int AS n
         FROM "Order" o WHERE ${range(from, to)} AND ${VALID} GROUP BY 1, 2 ORDER BY 1`,
-      this.prisma.$queryRaw<{ id: string; name: string; n: number; revenue: number }[]>`
-        SELECT l.id, l.name, COUNT(*)::int AS n, SUM(o.total)::float AS revenue
+      this.prisma.$queryRaw<{ id: string; name: string; n: number; revenue: Money }[]>`
+        SELECT l.id, l.name, COUNT(*)::int AS n, SUM(o.total) AS revenue
         FROM "Order" o JOIN "Location" l ON l.id = o."locationId"
         WHERE ${range(from, to)} AND ${VALID} GROUP BY l.id, l.name ORDER BY revenue DESC`,
-      this.prisma.$queryRaw<{ name: string; sku: string; quantity: number; revenue: number; cost: number }[]>`
-        SELECT oi.name, oi.sku, SUM(oi.quantity)::int AS quantity, SUM(oi.total)::float AS revenue,
-               SUM(oi.quantity * COALESCE(v."costPrice", 0))::float AS cost
+      this.prisma.$queryRaw<{ name: string; sku: string; quantity: number; revenue: Money; cost: Money; estimated: boolean }[]>`
+        SELECT oi.name, oi.sku, SUM(oi.quantity)::int AS quantity, SUM(oi.total) AS revenue,
+               SUM(${LINE_COST}) AS cost, bool_or(oi."unitCost" IS NULL) AS estimated
         FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" LEFT JOIN "ProductVariant" v ON v.id = oi."variantId"
         WHERE ${range(from, to)} AND ${VALID} GROUP BY oi.name, oi.sku ORDER BY revenue DESC LIMIT 20`,
-      this.prisma.$queryRaw<{ name: string; quantity: number; revenue: number }[]>`
-        SELECT COALESCE(c.name, 'Chưa phân loại') AS name, SUM(oi.quantity)::int AS quantity, SUM(oi.total)::float AS revenue
+      this.prisma.$queryRaw<{ name: string; quantity: number; revenue: Money }[]>`
+        SELECT COALESCE(c.name, 'Chưa phân loại') AS name, SUM(oi.quantity)::int AS quantity, SUM(oi.total) AS revenue
         FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId"
         LEFT JOIN "ProductVariant" v ON v.id = oi."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId"
         WHERE ${range(from, to)} AND ${VALID} GROUP BY 1 ORDER BY revenue DESC`,
-      this.prisma.$queryRaw<{ id: string; name: string; avatar: string | null; pos_n: number; pos_rev: number; handled: number }[]>`
+      this.prisma.$queryRaw<{ id: string; name: string; avatar: string | null; pos_n: number; pos_rev: Money; handled: number }[]>`
         SELECT u.id, u."fullName" AS name, u."avatarUrl" AS avatar,
                COUNT(*) FILTER (WHERE o."channelType" = 'POS' AND o."createdById" = u.id)::int AS pos_n,
-               COALESCE(SUM(o.total) FILTER (WHERE o."channelType" = 'POS' AND o."createdById" = u.id), 0)::float AS pos_rev,
+               COALESCE(SUM(o.total) FILTER (WHERE o."channelType" = 'POS' AND o."createdById" = u.id), 0) AS pos_rev,
                COUNT(*) FILTER (WHERE o."assignedToId" = u.id)::int AS handled
         FROM "Order" o JOIN "User" u ON u.id = o."createdById" OR u.id = o."assignedToId"
         WHERE ${range(from, to)} AND ${VALID} GROUP BY u.id ORDER BY pos_rev DESC, handled DESC`,
@@ -79,28 +90,29 @@ export class SalesReportService {
     ]);
 
     const valid = totals.filter((r) => r.status !== "CANCELLED" && r.status !== "RETURNED");
-    const revenue = valid.reduce((s, r) => s + r.revenue, 0);
+    const revenue = sum(valid.map((r) => r.revenue));
     const orders = valid.reduce((s, r) => s + r.n, 0);
     const cancelled = totals.find((r) => r.status === "CANCELLED")?.n ?? 0;
     const returned = totals.find((r) => r.status === "RETURNED")?.n ?? 0;
-    const grossProfit = revenue - cogs.cost;
-    const prevRevenue = prevTotals[0]?.revenue ?? 0;
+    const grossProfit = revenue.sub(cogs.cost);
+    const prevRevenue = prevTotals[0]?.revenue ?? ZERO;
     const prevOrders = prevTotals[0]?.n ?? 0;
+    const ratio = (a: Money, b: Money) => (b.isZero() ? 0 : num(a.div(b)));
 
     // Fill empty periods so charts have a continuous axis.
-    const periods = new Map<string, SalesReport["series"][number]>();
-    for (const key of this.periodKeys(from, to, groupBy)) periods.set(key, { period: key, revenue: 0, orders: 0, byChannel: {} });
-    const channelTotals = new Map<ChannelType, { orders: number; revenue: number }>();
+    const periods = new Map<string, { revenue: Money; orders: number; byChannel: Partial<Record<ChannelType, Money>> }>();
+    for (const key of this.periodKeys(from, to, groupBy)) periods.set(key, { revenue: ZERO, orders: 0, byChannel: {} });
+    const channelTotals = new Map<ChannelType, { orders: number; revenue: Money }>();
     for (const r of series) {
       const p = periods.get(r.period.toISOString().slice(0, 10));
       if (p) {
-        p.revenue += r.revenue;
+        p.revenue = p.revenue.add(r.revenue);
         p.orders += r.n;
-        p.byChannel[r.channel] = (p.byChannel[r.channel] ?? 0) + r.revenue;
+        p.byChannel[r.channel] = (p.byChannel[r.channel] ?? ZERO).add(r.revenue);
       }
-      const c = channelTotals.get(r.channel) ?? { orders: 0, revenue: 0 };
+      const c = channelTotals.get(r.channel) ?? { orders: 0, revenue: ZERO };
       c.orders += r.n;
-      c.revenue += r.revenue;
+      c.revenue = c.revenue.add(r.revenue);
       channelTotals.set(r.channel, c);
     }
 
@@ -112,34 +124,50 @@ export class SalesReportService {
       to: toKey,
       groupBy,
       summary: {
-        revenue,
+        revenue: num(revenue),
         orders,
-        aov: orders ? revenue / orders : 0,
-        grossProfit,
-        margin: revenue ? grossProfit / revenue : 0,
+        aov: orders ? num(revenue.div(orders)) : 0,
+        grossProfit: num(grossProfit),
+        margin: ratio(grossProfit, revenue),
         itemsSold: cogs.items,
         cancelled,
         cancelRate: orders + cancelled ? cancelled / (orders + cancelled) : 0,
         returned,
         newCustomers,
+        costEstimatedItems: cogs.estimatedItems,
       },
-      previous: { revenue: prevRevenue, orders: prevOrders, grossProfit: prevRevenue - prevCogs.cost, aov: prevOrders ? prevRevenue / prevOrders : 0 },
-      series: [...periods.values()],
-      channels: [...channelTotals.entries()].map(([channel, v]) => ({ channel, ...v, share: revenue ? v.revenue / revenue : 0 })).sort((a, b) => b.revenue - a.revenue),
-      locations: locations.map((l) => ({ locationId: l.id, name: l.name, orders: l.n, revenue: l.revenue })),
-      products: products.map((p) => ({ name: p.name, sku: p.sku, quantity: p.quantity, revenue: p.revenue, profit: p.revenue - p.cost })),
-      categories,
-      staff: staff.map((s) => ({ userId: s.id, fullName: s.name, avatarUrl: s.avatar, posOrders: s.pos_n, posRevenue: s.pos_rev, handledOrders: s.handled })),
+      previous: {
+        revenue: num(prevRevenue),
+        orders: prevOrders,
+        grossProfit: num(prevRevenue.sub(prevCogs.cost)),
+        aov: prevOrders ? num(prevRevenue.div(prevOrders)) : 0,
+      },
+      series: [...periods.entries()].map(([period, p]) => ({
+        period,
+        revenue: num(p.revenue),
+        orders: p.orders,
+        byChannel: Object.fromEntries(Object.entries(p.byChannel).map(([ch, v]) => [ch, num(v)])),
+      })),
+      channels: [...channelTotals.entries()]
+        .map(([channel, v]) => ({ channel, orders: v.orders, revenue: num(v.revenue), share: ratio(v.revenue, revenue) }))
+        .sort((a, b) => b.revenue - a.revenue),
+      locations: locations.map((l) => ({ locationId: l.id, name: l.name, orders: l.n, revenue: num(l.revenue) })),
+      products: products.map((p) => ({ name: p.name, sku: p.sku, quantity: p.quantity, revenue: num(p.revenue), profit: num(p.revenue.sub(p.cost)), profitEstimated: p.estimated })),
+      categories: categories.map((c) => ({ name: c.name, quantity: c.quantity, revenue: num(c.revenue) })),
+      staff: staff.map((s) => ({ userId: s.id, fullName: s.name, avatarUrl: s.avatar, posOrders: s.pos_n, posRevenue: num(s.pos_rev), handledOrders: s.handled })),
       heatmap,
     };
   }
 
-  private async cogs(where: Prisma.Sql) {
-    const [r] = await this.prisma.$queryRaw<{ items: number; cost: number }[]>`
-      SELECT COALESCE(SUM(oi.quantity), 0)::int AS items, COALESCE(SUM(oi.quantity * COALESCE(v."costPrice", 0)), 0)::float AS cost
+  /** Units sold and their cost; `estimatedItems` = units with no cost snapshot (priced at today's cost). */
+  private async cogs(where: Prisma.Sql): Promise<{ items: number; cost: Money; estimatedItems: number }> {
+    const [r] = await this.prisma.$queryRaw<{ items: number; cost: Money; estimated_items: number }[]>`
+      SELECT COALESCE(SUM(oi.quantity), 0)::int AS items,
+             COALESCE(SUM(${LINE_COST}), 0) AS cost,
+             COALESCE(SUM(oi.quantity) FILTER (WHERE oi."unitCost" IS NULL), 0)::int AS estimated_items
       FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" LEFT JOIN "ProductVariant" v ON v.id = oi."variantId"
       WHERE ${where} AND ${VALID}`;
-    return r ?? { items: 0, cost: 0 };
+    return r ? { items: r.items, cost: r.cost, estimatedItems: r.estimated_items } : { items: 0, cost: ZERO, estimatedItems: 0 };
   }
 
   /** Period keys matching Postgres date_trunc on local dates (weeks start Monday). */
