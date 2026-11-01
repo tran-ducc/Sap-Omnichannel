@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PackagePlus, PackageSearch } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Pagination, SearchBox, Segmented, SelectField } from "@/components/app/controls";
+import { ProductThumb } from "@/components/app/product-images";
 import { useSession } from "@/components/app/session-provider";
 import { EmptyState, ErrorState } from "@/components/app/states";
 import { buttonVariants } from "@/components/ui/button";
@@ -125,20 +126,13 @@ export function ProductsView() {
 const TINTS = ["bg-lime-soft", "bg-muted", "bg-amber-soft"];
 
 function ProductCard({ product: p, tint }: { product: ProductListItem; tint: number }) {
-  const initials = p.name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
   return (
     <Link
       href={`/app/products/${p.id}`}
       className="group flex h-full flex-col rounded-3xl bg-card p-3 transition-shadow hover:shadow-[0_16px_32px_-20px_rgb(18_20_16/0.35)] focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
     >
       <div className={cn("relative flex aspect-[4/3] items-center justify-center rounded-2xl text-3xl font-light tracking-tight", TINTS[tint])}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- product photos are user uploads on any host */}
-        {p.imageUrl ? <img src={p.imageUrl} alt="" className="size-full rounded-2xl object-cover" /> : <span aria-hidden>{initials}</span>}
+        <ProductThumb src={p.imageUrl} name={p.name} className="rounded-2xl" />
         {p.lowStockLevels > 0 && (
           <span className="absolute top-2.5 left-2.5 rounded-full bg-card px-2.5 py-1 text-xs font-medium text-amber-ink">Sắp hết ở {p.lowStockLevels} kho</span>
         )}

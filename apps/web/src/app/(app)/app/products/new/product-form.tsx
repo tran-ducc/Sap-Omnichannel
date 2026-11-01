@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Lock, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { SelectField } from "@/components/app/controls";
 import { FormField } from "@/components/app/form-field";
+import { ImageUrlsField } from "@/components/app/product-images";
 import { useSession } from "@/components/app/session-provider";
 import { EmptyState } from "@/components/app/states";
 import { buttonVariants } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function ProductForm() {
   const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [options, setOptions] = useState<OptionRow[]>([
     { id: 1, name: "Màu", values: [] },
     { id: 2, name: "Size", values: [] },
@@ -101,6 +103,7 @@ export function ProductForm() {
           categoryId: categoryId || undefined,
           brand: brand.trim() || undefined,
           description: description.trim() || undefined,
+          imageUrls,
           options: options.filter((o) => o.name.trim() && o.values.length).map((o) => ({ name: o.name.trim(), values: o.values })),
           variants: rows.map((r) => ({
             attributes: Object.fromEntries(optionNames.map((n, i) => [n, r.values[i]])),
@@ -176,6 +179,10 @@ export function ProductForm() {
               maxLength={5000}
               className="w-full rounded-3xl border border-input bg-card px-5 py-3 text-[15px] outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
             />
+          </div>
+          <div>
+            <p className="mb-1.5 text-sm font-medium">Ảnh sản phẩm</p>
+            <ImageUrlsField name={name} value={imageUrls} onChange={setImageUrls} error={error?.field("imageUrls")} />
           </div>
         </section>
 

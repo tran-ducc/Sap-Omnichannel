@@ -104,6 +104,7 @@ export class ProductsService {
     return {
       id: p.id,
       name: p.name,
+      imageUrls: p.imageUrls,
       description: p.description,
       brand: p.brand,
       categoryId: p.categoryId,
@@ -168,6 +169,7 @@ export class ProductsService {
             description: dto.description,
             brand: dto.brand,
             categoryId: dto.categoryId,
+            imageUrls: dto.imageUrls ?? [],
             options: dto.options.map((o) => ({ name: o.name.trim(), values: o.values.map((v) => v.trim()).filter(Boolean) })),
           },
         });

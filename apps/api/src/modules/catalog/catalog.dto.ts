@@ -1,3 +1,4 @@
+import { MAX_PRODUCT_IMAGES } from "@omni/shared";
 import { Transform, Type } from "class-transformer";
 import {
   ArrayMaxSize,
@@ -9,6 +10,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   Max,
   MaxLength,
@@ -113,6 +115,15 @@ export class CreateProductDto {
   @Type(() => VariantInputDto)
   variants: VariantInputDto[];
 
+  /** Product photos by URL (no upload yet). First one is the cover. */
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? [...new Set(value.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean))] : value))
+  @IsArray()
+  @ArrayMaxSize(MAX_PRODUCT_IMAGES, { message: `Tối đa ${MAX_PRODUCT_IMAGES} ảnh cho một sản phẩm` })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true }, { each: true, message: "Đường dẫn ảnh phải là địa chỉ http:// hoặc https:// hợp lệ" })
+  @MaxLength(2000, { each: true, message: "Đường dẫn ảnh quá dài" })
+  imageUrls?: string[];
+
   /** Online channels to list the new variants on. */
   @IsOptional()
   @IsArray()
@@ -140,6 +151,15 @@ export class UpdateProductDto {
   @IsOptional()
   @IsIn(["DRAFT", "ACTIVE"], { message: "Trạng thái không hợp lệ" })
   status?: "DRAFT" | "ACTIVE";
+
+  /** Product photos by URL (no upload yet). First one is the cover. */
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? [...new Set(value.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean))] : value))
+  @IsArray()
+  @ArrayMaxSize(MAX_PRODUCT_IMAGES, { message: `Tối đa ${MAX_PRODUCT_IMAGES} ảnh cho một sản phẩm` })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true }, { each: true, message: "Đường dẫn ảnh phải là địa chỉ http:// hoặc https:// hợp lệ" })
+  @MaxLength(2000, { each: true, message: "Đường dẫn ảnh quá dài" })
+  imageUrls?: string[];
 }
 
 export class UpdateVariantDto {

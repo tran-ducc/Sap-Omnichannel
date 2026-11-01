@@ -75,9 +75,14 @@ export interface VariantDetail {
   listings: ChannelListingState[];
 }
 
+/** Photos per product (pasted URLs; no upload yet). */
+export const MAX_PRODUCT_IMAGES = 5;
+
 export interface ProductDetail {
   id: string;
   name: string;
+  /** http(s) URLs, first is the cover. */
+  imageUrls: string[];
   description: string | null;
   brand: string | null;
   categoryId: string | null;

@@ -9,6 +9,7 @@ import { SelectField } from "@/components/app/controls";
 import { Dialog } from "@/components/app/dialog";
 import { FormField } from "@/components/app/form-field";
 import { PriceInput } from "@/components/app/price-input";
+import { ImageUrlsField } from "@/components/app/product-images";
 import { useSession } from "@/components/app/session-provider";
 import { AdjustStockDialog, MovementHistoryDialog, TransferStockDialog, type StockTarget } from "@/components/app/stock-dialogs";
 import { EmptyState, ErrorState, InlineError, RowsSkeleton } from "@/components/app/states";
@@ -133,6 +134,23 @@ export function ProductDetailView({ id }: { id: string }) {
       </div>
 
       {/* Variants */}
+      <section aria-labelledby="images-heading" className="rounded-3xl bg-card p-5">
+        <h2 id="images-heading" className="pb-3 text-xl font-normal tracking-[-0.02em]">
+          Ảnh sản phẩm
+        </h2>
+        {/* Saved immediately; the field shows API errors (e.g. invalid URL) inline. */}
+        <ImageUrlsField
+          name={data.name}
+          value={data.imageUrls}
+          disabled={!can("product:update") || data.status === "ARCHIVED"}
+          onChange={async (imageUrls) => {
+            const updated = await api<ProductDetail>(`/products/${id}`, { method: "PATCH", json: { imageUrls } });
+            mutate(() => updated);
+          }}
+        />
+        {data.imageUrls.length === 0 && !can("product:update") && <p className="text-sm text-muted-foreground">Chưa có ảnh.</p>}
+      </section>
+
       <section aria-labelledby="variants-heading" className="rounded-3xl bg-card p-3 sm:p-5">
         <h2 id="variants-heading" className="px-2 pb-3 text-xl font-normal tracking-[-0.02em]">
           Mẫu và tồn kho
