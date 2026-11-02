@@ -56,7 +56,7 @@ export class ProductsService {
             where: { isActive: true },
             select: {
               price: true,
-              inventory: { where: locationWhere(user), select: { onHand: true, reorderPoint: true } },
+              inventory: { where: locationWhere(user), select: { locationId: true, onHand: true, reserved: true, reorderPoint: true } },
               listings: { select: { channel: { select: { type: true } } } },
             },
           },
@@ -81,7 +81,8 @@ export class ProductsService {
           priceMin: prices.length ? Math.min(...prices) : 0,
           priceMax: prices.length ? Math.max(...prices) : 0,
           totalOnHand: levels.reduce((s, l) => s + l.onHand, 0),
-          lowStockLevels: levels.filter((l) => l.onHand <= l.reorderPoint).length,
+          // Branches where some variant's sellable stock (onHand - reserved) is at or below its reorder point.
+          lowStockLevels: new Set(levels.filter((l) => l.onHand - l.reserved <= l.reorderPoint).map((l) => l.locationId)).size,
           channels: [...new Set(p.variants.flatMap((v) => v.listings.map((l) => l.channel.type)))],
         };
       }),

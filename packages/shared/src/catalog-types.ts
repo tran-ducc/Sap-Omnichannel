@@ -57,6 +57,7 @@ export interface ProductListItem {
   priceMin: number;
   priceMax: number;
   totalOnHand: number;
+  /** Branches where a variant's sellable stock (onHand - reserved) is at or below its reorder point, out of stock included. */
   lowStockLevels: number;
   channels: ChannelType[];
 }

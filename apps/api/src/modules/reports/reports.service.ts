@@ -183,22 +183,27 @@ export class ReportsService {
     return rows.map((r) => ({ name: r.name, quantity: r.quantity, revenue: num(r.revenue) }));
   }
 
+  /**
+   * Low stock = sellable (onHand - reserved) at or below the row's reorder point,
+   * out of stock included. `count` is every such row; `items` the 5 lowest.
+   * The comparison is an expression, so the rows are picked in SQL.
+   */
   private async lowStock(tenantId: string) {
-    // Field-to-field comparison: on hand at or below this row's own reorder point.
-    const where: Prisma.InventoryLevelWhereInput = {
-      tenantId,
-      onHand: { lte: this.prisma.inventoryLevel.fields.reorderPoint },
-      variant: { isActive: true, product: { status: "ACTIVE", deletedAt: null } },
-    };
-    const [count, items] = await Promise.all([
-      this.prisma.inventoryLevel.count({ where }),
-      this.prisma.inventoryLevel.findMany({
-        where,
-        orderBy: { onHand: "asc" },
-        take: 5,
-        include: { variant: { select: { id: true, sku: true, name: true, product: { select: { name: true } } } }, location: { select: { name: true } } },
-      }),
+    const low = Prisma.sql`
+      FROM "InventoryLevel" il
+      JOIN "ProductVariant" v ON v.id = il."variantId"
+      JOIN "Product" p ON p.id = v."productId"
+      WHERE il."tenantId" = ${tenantId} AND v."isActive" AND p.status = 'ACTIVE' AND p."deletedAt" IS NULL
+        AND il."onHand" - il.reserved <= il."reorderPoint"`;
+    const [[{ count }], lowest] = await Promise.all([
+      this.prisma.$queryRaw<{ count: number }[]>`SELECT COUNT(*)::int AS count ${low}`,
+      this.prisma.$queryRaw<{ id: string }[]>`SELECT il.id ${low} ORDER BY il."onHand" - il.reserved ASC, il.id LIMIT 5`,
     ]);
+    const rows = await this.prisma.inventoryLevel.findMany({
+      where: { id: { in: lowest.map((r) => r.id) } },
+      include: { variant: { select: { id: true, sku: true, name: true, product: { select: { name: true } } } }, location: { select: { name: true } } },
+    });
+    const items = lowest.map((r) => rows.find((x) => x.id === r.id)!).filter(Boolean);
     return {
       count,
       items: items.map((i) => ({

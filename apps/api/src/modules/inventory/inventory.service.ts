@@ -223,6 +223,16 @@ export class InventoryService {
     const search = q.q?.trim();
     // Restricted staff only see (and filter by) their own branches.
     const levelScope: Prisma.InventoryLevelWhereInput = locationWhere(user, q.locationId);
+    // Low stock = sellable (onHand - reserved) at or below the reorder point, out of stock included.
+    // Prisma can't compare an expression with a column, so pick the variant ids in SQL, then page over them.
+    const lowStockIds = q.lowStock
+      ? (
+          await this.prisma.$queryRaw<{ id: string }[]>`
+            SELECT DISTINCT il."variantId" AS id FROM "InventoryLevel" il
+            WHERE il."tenantId" = ${user.tenantId} AND il."onHand" - il.reserved <= il."reorderPoint"
+              ${locationSql(user, Prisma.sql`il."locationId"`, q.locationId)}`
+        ).map((r) => r.id)
+      : null;
     const where: Prisma.ProductVariantWhereInput = {
       tenantId: user.tenantId,
       isActive: true,
@@ -235,8 +245,7 @@ export class InventoryService {
           { product: { name: { contains: search, mode: "insensitive" } } },
         ],
       }),
-      // Field reference: compare each row's on-hand with its own reorder point.
-      ...(q.lowStock && { inventory: { some: { ...levelScope, onHand: { lte: this.prisma.inventoryLevel.fields.reorderPoint } } } }),
+      ...(lowStockIds && { id: { in: lowStockIds } }),
     };
 
     const [total, variants, summary] = await Promise.all([
@@ -284,7 +293,8 @@ export class InventoryService {
     const [row] = await this.prisma.$queryRaw<{ sku: number; on_hand: number; low: number; out: number; value: number }[]>`
       SELECT COUNT(DISTINCT v.id)::int AS sku,
              COALESCE(SUM(il."onHand"), 0)::int AS on_hand,
-             COUNT(*) FILTER (WHERE il."onHand" - il.reserved > 0 AND il."onHand" <= il."reorderPoint")::int AS low,
+             -- running low: some sellable stock left, at or below the reorder point (never also counted as out)
+             COUNT(*) FILTER (WHERE il."onHand" - il.reserved > 0 AND il."onHand" - il.reserved <= il."reorderPoint")::int AS low,
              COUNT(*) FILTER (WHERE il."onHand" - il.reserved <= 0)::int AS out,
              COALESCE(SUM(il."onHand" * COALESCE(v."costPrice", 0)), 0)::float AS value
       FROM "InventoryLevel" il

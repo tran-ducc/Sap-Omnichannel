@@ -134,7 +134,7 @@ function ProductCard({ product: p, tint }: { product: ProductListItem; tint: num
       <div className={cn("relative flex aspect-[4/3] items-center justify-center rounded-2xl text-3xl font-light tracking-tight", TINTS[tint])}>
         <ProductThumb src={p.imageUrl} name={p.name} className="rounded-2xl" />
         {p.lowStockLevels > 0 && (
-          <span className="absolute top-2.5 left-2.5 rounded-full bg-card px-2.5 py-1 text-xs font-medium text-amber-ink">Sắp hết ở {p.lowStockLevels} kho</span>
+          <span className="absolute top-2.5 left-2.5 rounded-full bg-card px-2.5 py-1 text-xs font-medium text-amber-ink">Tồn thấp ở {p.lowStockLevels} kho</span>
         )}
         {p.status !== "ACTIVE" && <span className="absolute top-2.5 right-2.5 rounded-full bg-card px-2.5 py-1 text-xs font-medium">{STATUS_LABEL[p.status]}</span>}
       </div>
