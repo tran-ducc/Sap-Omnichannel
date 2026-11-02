@@ -373,7 +373,10 @@ export class OrdersService {
         data.cancelReason = dto.reason;
       }
       if (to === "RETURNED") {
-        await move("RETURN", 1, 0, `Khách trả đơn ${order.code}`);
+        // Only put units back if they actually left the shelf (SALE on ship/complete, or POS checkout).
+        // Orders without the mark (e.g. imported or seeded history) never touched stock, so a return
+        // must not add any. RETURNED is terminal, so this runs at most once per order.
+        if (order.stockDeductedAt) await move("RETURN", 1, 0, `Khách trả đơn ${order.code}`);
         if (order.paymentStatus === "PAID") data.paymentStatus = "REFUNDED";
         // cancelReason holds the reason for both outcomes; the status tells which one it is.
         data.cancelReason = dto.reason;

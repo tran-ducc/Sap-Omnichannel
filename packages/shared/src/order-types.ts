@@ -11,7 +11,7 @@ export type PaymentMethod = "CASH" | "CARD" | "BANK_TRANSFER" | "EWALLET" | "COD
  * - order placed            → reserve stock
  * - → SHIPPING / COMPLETED  → deduct on-hand (SALE) and release the reservation
  * - → CANCELLED             → release the reservation
- * - → RETURNED              → put shipped units back (RETURN)
+ * - → RETURNED              → put units back (RETURN), only if the order's stock was deducted
  */
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
