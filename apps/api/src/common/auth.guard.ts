@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { RoleKey } from "@omni/shared";
 import type { Request } from "express";
 import { PrismaService } from "../prisma/prisma.module";
+import { NO_SHOP_ACCESS, SHOP_SUSPENDED } from "../modules/auth/auth.service";
 import type { AuthUser } from "./permissions.guard";
 
 export const IS_PUBLIC_KEY = "isPublic";
@@ -49,8 +50,22 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException("Phiên đăng nhập đã hết hạn");
     }
+    await this.assertAccess(payload);
     req.user = { userId: payload.sub, tenantId: payload.tid, role: payload.role, locationIds: await this.branchScope(payload) };
     return true;
+  }
+
+  /**
+   * A valid signature isn't enough: a disabled user, a removed membership or a
+   * suspended shop is refused on the next request instead of when the token expires.
+   */
+  private async assertAccess(p: AccessTokenPayload): Promise<void> {
+    const m = await this.prisma.membership.findUnique({
+      where: { userId_tenantId: { userId: p.sub, tenantId: p.tid } },
+      select: { status: true, user: { select: { isActive: true } }, tenant: { select: { status: true } } },
+    });
+    if (!m || m.status !== "ACTIVE" || !m.user.isActive) throw new UnauthorizedException(NO_SHOP_ACCESS);
+    if (m.tenant.status === "SUSPENDED") throw new UnauthorizedException(SHOP_SUSPENDED);
   }
 
   /**

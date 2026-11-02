@@ -15,6 +15,8 @@ const RESET_TTL_MS = 30 * 60 * 1000;
 /** Same answer whether or not the email has an account, so the form can't be used to find accounts. */
 export const FORGOT_PASSWORD_MESSAGE = "Nếu email này có tài khoản Sạp, chúng tôi đã gửi liên kết đặt lại mật khẩu. Liên kết có hiệu lực trong 30 phút.";
 const RESET_INVALID = "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới.";
+export const SHOP_SUSPENDED = "Cửa hàng đang tạm khoá. Liên hệ chủ cửa hàng.";
+export const NO_SHOP_ACCESS = "Tài khoản không còn quyền truy cập cửa hàng này";
 
 export interface IssuedSession {
   session: AuthSession;
@@ -94,7 +96,7 @@ export class AuthService {
     }
     const membership = dto.tenantSlug ? user.memberships.find((m) => m.tenant.slug === dto.tenantSlug) : user.memberships[0];
     if (!membership) throw new ForbiddenException("Tài khoản chưa thuộc cửa hàng nào hoặc đã bị khoá");
-    if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException("Cửa hàng đang tạm khoá. Liên hệ chủ cửa hàng.");
+    if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException(SHOP_SUSPENDED);
 
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }),
@@ -106,7 +108,9 @@ export class AuthService {
   /**
    * Rotates the refresh token. Presenting a token that was already rotated
    * means it leaked (or was replayed), so every session of that user is
-   * revoked and they must log in again.
+   * revoked and they must log in again. The old token is only revoked once the
+   * new session is about to be issued: a refused shop (suspended, access
+   * removed) leaves it untouched.
    */
   async refresh(rawToken: string | undefined, userAgent?: string): Promise<IssuedSession> {
     if (!rawToken) throw new UnauthorizedException("Phiên đăng nhập đã hết hạn");
@@ -119,8 +123,7 @@ export class AuthService {
     }
     if (stored.expiresAt < new Date()) throw new UnauthorizedException("Phiên đăng nhập đã hết hạn");
 
-    await this.prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
-    return this.issue(stored.userId, stored.tenantId, userAgent);
+    return this.issue(stored.userId, stored.tenantId, userAgent, stored.id);
   }
 
   async logout(rawToken: string | undefined): Promise<void> {
@@ -183,7 +186,7 @@ export class AuthService {
   async switchTenant(userId: string, tenantId: string, currentRefreshToken: string | undefined, userAgent?: string, ip?: string): Promise<IssuedSession> {
     const membership = await this.prisma.membership.findUnique({ where: { userId_tenantId: { userId, tenantId } }, include: { tenant: true } });
     if (!membership || membership.status !== "ACTIVE") throw new ForbiddenException("Bạn không thuộc cửa hàng này hoặc tài khoản đã bị khoá");
-    if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException("Cửa hàng đang tạm khoá. Liên hệ chủ cửa hàng.");
+    if (membership.tenant.status === "SUSPENDED") throw new ForbiddenException(SHOP_SUSPENDED);
     if (currentRefreshToken) {
       await this.prisma.refreshToken.updateMany({ where: { tokenHash: sha256(currentRefreshToken), userId, revokedAt: null }, data: { revokedAt: new Date() } });
     }
@@ -214,9 +217,8 @@ export class AuthService {
         select: { tenant: { select: { id: true, name: true, slug: true } } },
       }),
     ]);
-    if (!membership || membership.status !== "ACTIVE" || !membership.user.isActive) {
-      throw new UnauthorizedException("Tài khoản không còn quyền truy cập cửa hàng này");
-    }
+    if (!membership || membership.status !== "ACTIVE" || !membership.user.isActive) throw new UnauthorizedException(NO_SHOP_ACCESS);
+    if (membership.tenant.status === "SUSPENDED") throw new UnauthorizedException(SHOP_SUSPENDED);
     // Custom roles (no key) fall back to Staff-level access until they are supported in the UI.
     const role: RoleKey = membership.role.key ?? "STAFF";
     const session: Omit<AuthSession, "accessToken"> = {
@@ -230,7 +232,8 @@ export class AuthService {
     return { session, role };
   }
 
-  private async issue(userId: string, tenantId: string, userAgent?: string): Promise<IssuedSession> {
+  /** `rotatedTokenId`: the refresh token being replaced, revoked together with the new one's creation. */
+  private async issue(userId: string, tenantId: string, userAgent?: string, rotatedTokenId?: string): Promise<IssuedSession> {
     const { session, role } = await this.buildSession(userId, tenantId);
     const payload: AccessTokenPayload = { sub: userId, tid: tenantId, role };
     const accessToken = await this.jwt.signAsync(payload);
@@ -239,12 +242,15 @@ export class AuthService {
     const days = Number(this.config.get("JWT_REFRESH_TTL_DAYS") ?? 30);
     const refreshExpiresAt = new Date(Date.now() + days * 24 * 3600 * 1000);
     try {
-      await this.prisma.refreshToken.create({
-        data: { userId, tenantId, tokenHash: sha256(refreshToken), expiresAt: refreshExpiresAt, userAgent: userAgent?.slice(0, 255) },
-      });
+      await this.prisma.$transaction([
+        ...(rotatedTokenId ? [this.prisma.refreshToken.update({ where: { id: rotatedTokenId }, data: { revokedAt: new Date() } })] : []),
+        this.prisma.refreshToken.create({
+          data: { userId, tenantId, tokenHash: sha256(refreshToken), expiresAt: refreshExpiresAt, userAgent: userAgent?.slice(0, 255) },
+        }),
+      ]);
     } catch (e) {
       // A hash collision is practically impossible; surface anything else.
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return this.issue(userId, tenantId, userAgent);
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return this.issue(userId, tenantId, userAgent, rotatedTokenId);
       throw e;
     }
     return { session: { ...session, accessToken }, refreshToken, refreshExpiresAt };
