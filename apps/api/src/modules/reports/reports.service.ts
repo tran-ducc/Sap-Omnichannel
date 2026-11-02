@@ -5,6 +5,7 @@ import { locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay, startOfVnMonth, vnDateKey } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
+import { orderLines } from "./sales-report.service";
 
 type Money = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -173,15 +174,13 @@ export class ReportsService {
     return [...days.values()];
   }
 
+  /** Best sellers by units; revenue is each line's share after the order discount (same split as the sales report). */
   private async topProducts(tenantId: string, from: Date) {
-    const rows = await this.prisma.orderItem.groupBy({
-      by: ["name"],
-      where: { order: { tenantId, placedAt: { gte: from }, status: REVENUE_STATUS } },
-      _sum: { quantity: true, total: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: 5,
-    });
-    return rows.map((r) => ({ name: r.name, quantity: r._sum.quantity ?? 0, revenue: num(r._sum.total) }));
+    const rows = await this.prisma.$queryRaw<{ name: string; quantity: number; revenue: Money }[]>`
+      SELECT ol.name, SUM(ol.quantity)::int AS quantity, SUM(ol.revenue) AS revenue
+      FROM ${orderLines(Prisma.sql`o."tenantId" = ${tenantId} AND o."placedAt" >= ${from} AND o.status = ${REVENUE_STATUS}::"OrderStatus"`)} ol
+      GROUP BY ol.name ORDER BY quantity DESC, revenue DESC LIMIT 5`;
+    return rows.map((r) => ({ name: r.name, quantity: r.quantity, revenue: num(r.revenue) }));
   }
 
   private async lowStock(tenantId: string) {

@@ -32,6 +32,44 @@ const LOCAL = Prisma.sql`(o."placedAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho
  */
 const LINE_COST = Prisma.sql`oi.quantity * COALESCE(oi."unitCost", v."costPrice", 0)`;
 
+/**
+ * Order lines with their share of the order-level discount, for per-product
+ * figures. OrderItem.total is the line amount before Order.discountTotal (POS
+ * and manual orders keep the discount on the order), so each line gets
+ * discount × total / subtotal, rounded to the đồng; the last line of an order
+ * takes the remainder so an order's lines add up to exactly subtotal − discount.
+ * No split when subtotal or discount is 0; the discount is capped at subtotal.
+ * Shipping is never assigned to a line (shop revenue = Order.total keeps it).
+ *
+ * `where` filters orders (alias o) and must not drop lines of a matching order.
+ * Columns: name, sku, variantId, quantity, revenue (after discount), cost, estimated.
+ * Used by the sales report and the dashboard's top products, so both agree.
+ */
+export function orderLines(where: Prisma.Sql) {
+  return Prisma.sql`(
+    SELECT l.name, l.sku, l."variantId", l.quantity, l.cost, l.estimated,
+           CASE
+             WHEN l.subtotal = 0 OR l.disc = 0 THEN l.total
+             WHEN l.rn = l.cnt THEN (l.subtotal - l.disc) - (SUM(l.share) OVER (PARTITION BY l."orderId") - l.share)
+             ELSE l.share
+           END AS revenue
+    FROM (
+      SELECT oi."orderId", oi.name, oi.sku, oi."variantId", oi.quantity, oi.total,
+             ${LINE_COST} AS cost,
+             oi."unitCost" IS NULL AS estimated,
+             o.subtotal,
+             LEAST(o."discountTotal", o.subtotal) AS disc,
+             CASE WHEN o.subtotal > 0
+                  THEN ROUND(oi.total * (o.subtotal - LEAST(o."discountTotal", o.subtotal)) / o.subtotal, 0)
+                  ELSE oi.total END AS share,
+             ROW_NUMBER() OVER (PARTITION BY oi."orderId" ORDER BY oi.id) AS rn,
+             COUNT(*) OVER (PARTITION BY oi."orderId") AS cnt
+      FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" LEFT JOIN "ProductVariant" v ON v.id = oi."variantId"
+      WHERE ${where}
+    ) l
+  )`;
+}
+
 @Injectable()
 export class SalesReportService {
   constructor(private readonly prisma: PrismaService) {}
@@ -68,15 +106,15 @@ export class SalesReportService {
         FROM "Order" o JOIN "Location" l ON l.id = o."locationId"
         WHERE ${range(from, to)} AND ${VALID} GROUP BY l.id, l.name ORDER BY revenue DESC`,
       this.prisma.$queryRaw<{ name: string; sku: string; quantity: number; revenue: Money; cost: Money; estimated: boolean }[]>`
-        SELECT oi.name, oi.sku, SUM(oi.quantity)::int AS quantity, SUM(oi.total) AS revenue,
-               SUM(${LINE_COST}) AS cost, bool_or(oi."unitCost" IS NULL) AS estimated
-        FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" LEFT JOIN "ProductVariant" v ON v.id = oi."variantId"
-        WHERE ${range(from, to)} AND ${VALID} GROUP BY oi.name, oi.sku ORDER BY revenue DESC LIMIT 20`,
+        SELECT ol.name, ol.sku, SUM(ol.quantity)::int AS quantity, SUM(ol.revenue) AS revenue,
+               SUM(ol.cost) AS cost, bool_or(ol.estimated) AS estimated
+        FROM ${orderLines(Prisma.sql`${range(from, to)} AND ${VALID}`)} ol
+        GROUP BY ol.name, ol.sku ORDER BY revenue DESC LIMIT 20`,
       this.prisma.$queryRaw<{ name: string; quantity: number; revenue: Money }[]>`
-        SELECT COALESCE(c.name, 'Chưa phân loại') AS name, SUM(oi.quantity)::int AS quantity, SUM(oi.total) AS revenue
-        FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId"
-        LEFT JOIN "ProductVariant" v ON v.id = oi."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId"
-        WHERE ${range(from, to)} AND ${VALID} GROUP BY 1 ORDER BY revenue DESC`,
+        SELECT COALESCE(c.name, 'Chưa phân loại') AS name, SUM(ol.quantity)::int AS quantity, SUM(ol.revenue) AS revenue
+        FROM ${orderLines(Prisma.sql`${range(from, to)} AND ${VALID}`)} ol
+        LEFT JOIN "ProductVariant" v ON v.id = ol."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId"
+        GROUP BY 1 ORDER BY revenue DESC`,
       this.prisma.$queryRaw<{ id: string; name: string; avatar: string | null; pos_n: number; pos_rev: Money; handled: number }[]>`
         SELECT u.id, u."fullName" AS name, u."avatarUrl" AS avatar,
                COUNT(*) FILTER (WHERE o."channelType" = 'POS' AND o."createdById" = u.id)::int AS pos_n,

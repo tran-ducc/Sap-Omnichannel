@@ -280,7 +280,7 @@ export function ReportsView() {
                 </table>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Lợi nhuận gộp tính theo giá vốn lưu lại lúc bán. Đơn bán trước khi có tính năng này chưa lưu giá vốn nên được ước tính theo giá vốn hiện tại.
+                Doanh thu từng sản phẩm đã trừ phần giảm giá của đơn (chia theo giá trị dòng hàng) và không gồm phí giao hàng, nên tổng các dòng có thể thấp hơn doanh thu cửa hàng. Lợi nhuận gộp tính theo giá vốn lưu lại lúc bán; đơn bán trước khi có tính năng này được ước tính theo giá vốn hiện tại.
               </p>
             </section>
 
