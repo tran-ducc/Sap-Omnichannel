@@ -149,7 +149,7 @@ export function Features() {
         {[
           { icon: Store, label: "Khách quen và tích điểm" },
           { icon: Barcode, label: "In tem mã vạch hàng loạt" },
-          { icon: FileText, label: "Hoá đơn điện tử" },
+          { icon: FileText, label: "In hoá đơn 80mm" },
           { icon: BellRing, label: "Báo khi hàng sắp hết" },
           { icon: History, label: "Nhật ký thao tác nhân viên" },
         ].map(({ icon: Icon, label }) => (

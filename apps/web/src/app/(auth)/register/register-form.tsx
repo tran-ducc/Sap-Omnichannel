@@ -46,7 +46,7 @@ export function RegisterForm() {
 
   return (
     <>
-      <AuthHeadline sub="Miễn phí 14 ngày, không cần thẻ ngân hàng. Bạn sẽ là Admin của cửa hàng.">Dọn sạp lên mạng trong 10 phút</AuthHeadline>
+      <AuthHeadline sub="Đăng ký hiện không thu phí. Bạn sẽ là Admin của cửa hàng.">Dọn sạp lên mạng trong 10 phút</AuthHeadline>
 
       {error && (
         <div ref={summaryRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive outline-none">

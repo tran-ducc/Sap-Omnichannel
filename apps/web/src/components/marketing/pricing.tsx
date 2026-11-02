@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { PLANS } from "./content";
+import { COPY, PLANS } from "./content";
 import { revealStagger } from "./reveal";
 
 export function Pricing() {
@@ -20,7 +20,7 @@ export function Pricing() {
           <h2 id="pricing-heading" className="text-4xl leading-[1.08] font-normal tracking-[-0.035em] sm:text-5xl">
             Giá rõ ràng, không thu theo đơn
           </h2>
-          <p className="mt-5 text-[17px] leading-relaxed font-light text-muted-foreground">Dùng thử 14 ngày mọi tính năng. Đổi gói hoặc dừng bất cứ lúc nào.</p>
+          <p className="mt-5 text-[17px] leading-relaxed font-light text-muted-foreground">{COPY.pricingNote}</p>
         </div>
         {/* Each side label selects its own period; the switch in between toggles. */}
         <div className="inline-flex items-center gap-3 text-[15px] font-medium">
@@ -86,7 +86,6 @@ export function Pricing() {
           );
         })}
       </ul>
-      <p className="mt-6 text-sm text-muted-foreground">Giá chưa gồm VAT. Hoá đơn VAT được xuất khi thanh toán.</p>
-    </section>
+          </section>
   );
 }

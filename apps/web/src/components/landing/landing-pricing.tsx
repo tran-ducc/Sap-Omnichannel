@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
 import { useState } from "react";
-import { PLANS } from "@/components/marketing/content";
+import { COPY, PLANS } from "@/components/marketing/content";
 import { revealStagger } from "@/components/marketing/reveal";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -86,7 +86,7 @@ export function LandingPricing() {
             );
           })}
         </ul>
-        <p className="mt-6 text-sm text-forest-foreground/60">Giá chưa gồm VAT. Hoá đơn VAT được xuất khi thanh toán.</p>
+        <p className="mt-6 text-sm text-forest-foreground/60">{COPY.pricingNote}</p>
       </div>
     </section>
   );

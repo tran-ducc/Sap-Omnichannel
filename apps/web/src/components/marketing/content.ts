@@ -43,16 +43,17 @@ export const COPY = {
     title: "Một hộp đơn cho mọi kênh",
     body: "Đơn tại quầy, đơn nhập từ website, mạng xã hội và sàn nằm chung một danh sách, phân công cho từng nhân viên.",
   },
-  ctaBody: "Tạo cửa hàng, nhập sản phẩm và bán đơn đầu tiên ngay hôm nay. Miễn phí 14 ngày, không cần thẻ ngân hàng.",
+  ctaBody: "Tạo cửa hàng, nhập sản phẩm và bán đơn đầu tiên ngay hôm nay. Dùng các tính năng hiện có, chưa thu phí.",
+  pricingNote: "Bảng giá mang tính tham khảo: hạn mức của từng gói chưa được áp dụng và chưa mở thanh toán. Đăng ký hiện không thu phí.",
   syncStat: { value: "< 2 giây", label: "để số tồn mới hiện trên mọi màn hình trong cửa hàng" },
   heroQuote: "“Đơn ở quầy hay đơn online đều trừ một kho, không còn mỗi nơi một con số.”",
 };
 
 export const STATS = [
-  { value: "1,2 triệu", label: "đơn xử lý mỗi tháng" },
-  { value: "6", label: "kênh bán kết nối sẵn" },
+  { value: "6", label: "loại kênh bán có trong Sạp: quầy, website, Facebook và ba sàn (sàn đang giả lập)" },
   COPY.syncStat,
-  { value: "99,95%", label: "thời gian hoạt động năm 2026" },
+  { value: "3", label: "vai trò phân quyền: Admin, Quản lý, Nhân viên" },
+  { value: "80mm", label: "hoá đơn in từ trình duyệt ngay tại quầy" },
 ];
 
 /** Fictional customers for the social-proof strip. */
@@ -99,7 +100,7 @@ export const PLANS = [
     yearly: 159_000,
     description: "Cho cửa hàng một chi nhánh mới bắt đầu bán online.",
     features: ["1 chi nhánh", "2 kênh bán", "3 tài khoản nhân viên", "POS trên máy tính và tablet", "Báo cáo cơ bản"],
-    cta: "Dùng thử 14 ngày",
+    cta: "Đăng ký miễn phí",
     highlighted: false,
   },
   {
@@ -113,9 +114,9 @@ export const PLANS = [
       "15 tài khoản nhân viên",
       "Đồng bộ tồn kho thời gian thực",
       "CRM và tích điểm",
-      "Báo cáo nâng cao, xuất Excel",
+      "Báo cáo nâng cao, xuất CSV",
     ],
-    cta: "Dùng thử 14 ngày",
+    cta: "Đăng ký miễn phí",
     highlighted: true,
   },
   {
@@ -123,7 +124,7 @@ export const PLANS = [
     monthly: null,
     yearly: null,
     description: "Cho chuỗi cửa hàng cần API, phân quyền theo chi nhánh và hỗ trợ riêng.",
-    features: ["Không giới hạn chi nhánh", "Phân quyền theo chi nhánh", "API và webhook", "Người phụ trách riêng", "Cam kết SLA 99,95%"],
+    features: ["Không giới hạn chi nhánh", "Phân quyền theo chi nhánh", "API và webhook (chưa có)", "Người phụ trách riêng", "Cam kết SLA (chưa áp dụng)"],
     cta: "Liên hệ tư vấn",
     highlighted: false,
   },
@@ -157,7 +158,7 @@ export const TESTIMONIALS = [
 export const FAQS = [
   {
     q: "Tôi có cần mua máy POS riêng không?",
-    a: "Không. Sạp chạy trên trình duyệt của máy tính, tablet hoặc điện thoại. Máy in hoá đơn, máy quét mã vạch và két tiền thông dụng đều kết nối được qua USB hoặc Bluetooth.",
+    a: "Không. Sạp chạy trên trình duyệt của máy tính, tablet hoặc điện thoại. Ở màn hình POS, máy quét mã vạch loại nhận như bàn phím đều dùng được. Sạp chưa có driver cho máy quét Bluetooth và chưa hỗ trợ két tiền; hoá đơn in qua hộp thoại in của trình duyệt.",
   },
   {
     q: "Sạp đã kết nối thẳng với Shopee, Lazada, TikTok Shop chưa?",
@@ -165,14 +166,14 @@ export const FAQS = [
   },
   {
     q: "Dữ liệu cũ từ Excel hoặc phần mềm khác có chuyển sang được không?",
-    a: "Được. Bạn tải file Excel sản phẩm, khách hàng và tồn kho lên, Sạp tự nhận cột. Gói Tăng trưởng trở lên có nhân viên hỗ trợ chuyển dữ liệu miễn phí.",
+    a: "Chưa có chức năng nhập từ file Excel. Hiện bạn tạo sản phẩm và nhập tồn đầu kỳ ngay trong ứng dụng.",
   },
   {
-    q: "Hết 14 ngày dùng thử thì sao?",
-    a: "Bạn chọn gói để tiếp tục, hoặc dừng mà không mất phí. Không cần thẻ ngân hàng khi đăng ký. Dữ liệu được giữ thêm 30 ngày để bạn quyết định.",
+    q: "Đăng ký có mất phí không?",
+    a: "Không. Đăng ký hiện không thu phí và cửa hàng không bị khoá sau một thời hạn nào. Bảng giá chỉ mang tính tham khảo, chưa mở thanh toán.",
   },
   {
     q: "Có xuất hoá đơn điện tử không?",
-    a: "Có. Sạp kết nối với các nhà cung cấp hoá đơn điện tử phổ biến để xuất hoá đơn ngay khi đơn hoàn tất.",
+    a: "Chưa. Sạp chưa xuất hoá đơn điện tử; màn hình POS hiện chỉ in hoá đơn bán lẻ khổ 80mm qua trình duyệt.",
   },
 ];

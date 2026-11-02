@@ -499,8 +499,12 @@ function StaffDashboard({ data }: { data: DashboardOverview }) {
 /** Shown to a shop with no orders yet: the empty dashboard becomes a checklist. */
 function GettingStarted() {
   const steps = [
-    { href: "/app/products", title: "Thêm sản phẩm", body: "Nhập tay hoặc tải file Excel có sẵn." },
-    { href: "/app/settings", title: "Kết nối kênh bán", body: "Shopee, Lazada, TikTok Shop, Facebook." },
+    { href: "/app/products", title: "Thêm sản phẩm", body: "Tạo sản phẩm và nhập tồn đầu kỳ cho từng kho ở màn hình Sản phẩm." },
+    {
+      href: "/app/settings",
+      title: "Chọn kênh bán",
+      body: "Bật kênh và chọn kho xuất hàng. Sàn chưa nối API, đơn sàn được tạo bằng mô phỏng.",
+    },
     { href: "/app/pos", title: "Bán đơn đầu tiên", body: "Mở màn hình bán tại quầy trên máy tính hoặc tablet." },
   ];
   return (
