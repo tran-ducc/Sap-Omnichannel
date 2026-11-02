@@ -24,6 +24,9 @@ export interface SalesSummary {
   cancelRate: number;
   returned: number;
   newCustomers: number;
+  /** Orders placed in the period still in progress (PENDING…SHIPPING): count and value, not revenue. */
+  inProgressOrders: number;
+  inProgressTotal: number;
   /** Units whose cost had no snapshot (older lines): their profit is an estimate at today's cost price. */
   costEstimatedItems: number;
 }

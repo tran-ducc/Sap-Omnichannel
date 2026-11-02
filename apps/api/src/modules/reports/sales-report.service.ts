@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import type { ChannelType, ReportGroupBy, SalesReport } from "@omni/shared";
+import { IN_PROGRESS_STATUSES, REVENUE_STATUS, type ChannelType, type ReportGroupBy, type SalesReport } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import { locationSql } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
@@ -21,8 +21,9 @@ const ZERO = new Prisma.Decimal(0);
 const num = (d: Money | null | undefined) => (d == null ? 0 : Number(d));
 const sum = (xs: Money[]) => xs.reduce((s, x) => s.add(x), ZERO);
 
-/** Orders that count as sales. */
-const VALID = Prisma.sql`o.status NOT IN ('CANCELLED', 'RETURNED')`;
+/** Orders that count as sales: COMPLETED only (see REVENUE_STATUS). In-progress orders are reported apart. */
+const VALID = Prisma.sql`o.status = ${REVENUE_STATUS}::"OrderStatus"`;
+const IN_PROGRESS = new Set<string>(IN_PROGRESS_STATUSES);
 /** placedAt in Vietnam local time (stored as UTC without zone). */
 const LOCAL = Prisma.sql`(o."placedAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh'`;
 /**
@@ -89,9 +90,10 @@ export class SalesReportService {
       this.prisma.customer.count({ where: { tenantId: t, createdAt: { gte: from, lt: to } } }),
     ]);
 
-    const valid = totals.filter((r) => r.status !== "CANCELLED" && r.status !== "RETURNED");
-    const revenue = sum(valid.map((r) => r.revenue));
-    const orders = valid.reduce((s, r) => s + r.n, 0);
+    const completed = totals.filter((r) => r.status === REVENUE_STATUS);
+    const revenue = sum(completed.map((r) => r.revenue));
+    const orders = completed.reduce((s, r) => s + r.n, 0);
+    const inProgress = totals.filter((r) => IN_PROGRESS.has(r.status));
     const cancelled = totals.find((r) => r.status === "CANCELLED")?.n ?? 0;
     const returned = totals.find((r) => r.status === "RETURNED")?.n ?? 0;
     const grossProfit = revenue.sub(cogs.cost);
@@ -131,9 +133,12 @@ export class SalesReportService {
         margin: ratio(grossProfit, revenue),
         itemsSold: cogs.items,
         cancelled,
+        // Cancelled / (completed + cancelled); returned and in-progress orders stay out of the base.
         cancelRate: orders + cancelled ? cancelled / (orders + cancelled) : 0,
         returned,
         newCustomers,
+        inProgressOrders: inProgress.reduce((s, r) => s + r.n, 0),
+        inProgressTotal: num(sum(inProgress.map((r) => r.revenue))),
         costEstimatedItems: cogs.estimatedItems,
       },
       previous: {

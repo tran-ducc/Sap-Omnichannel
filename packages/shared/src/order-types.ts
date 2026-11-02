@@ -7,6 +7,15 @@ export type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID" | "REFUNDED";
 export type PaymentMethod = "CASH" | "CARD" | "BANK_TRANSFER" | "EWALLET" | "COD";
 
 /**
+ * Revenue counts only COMPLETED orders: that is when COD is collected, the
+ * customer is credited (totalSpent) and POS orders are created. Cancelled and
+ * returned orders are never revenue; orders still moving through the flow are
+ * reported apart as "in progress" (count + value), never added to revenue.
+ */
+export const REVENUE_STATUS = "COMPLETED" as const satisfies OrderStatus;
+export const IN_PROGRESS_STATUSES = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPING"] as const satisfies readonly OrderStatus[];
+
+/**
  * Allowed status changes. Stock effects (applied by the API):
  * - order placed            → reserve stock
  * - → SHIPPING / COMPLETED  → deduct on-hand (SALE) and release the reservation

@@ -147,7 +147,14 @@ export function ReportsView() {
               prev={data.previous.grossProfit}
               note={`Biên ${(data.summary.margin * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%${data.summary.costEstimatedItems ? `, ${formatNumber(data.summary.costEstimatedItems)} sp tính theo giá vốn hiện tại` : ""}`}
             />
-            <Kpi label="Đơn hàng" value={formatNumber(data.summary.orders)} cur={data.summary.orders} prev={data.previous.orders} note={`${formatNumber(data.summary.itemsSold)} sản phẩm`} />
+            {/* Revenue figures count COMPLETED orders only; open orders are listed apart and never added to revenue. */}
+            <Kpi
+              label="Đơn hoàn thành"
+              value={formatNumber(data.summary.orders)}
+              cur={data.summary.orders}
+              prev={data.previous.orders}
+              note={`${formatNumber(data.summary.itemsSold)} sản phẩm. Đang xử lý: ${formatNumber(data.summary.inProgressOrders)} đơn, ${formatVNDCompact(data.summary.inProgressTotal)} (chưa tính doanh thu)`}
+            />
             <Kpi label="Giá trị đơn trung bình" value={formatVND(data.summary.aov)} cur={data.summary.aov} prev={data.previous.aov} note={`${formatNumber(data.summary.newCustomers)} khách mới, huỷ ${(data.summary.cancelRate * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`} />
           </section>
 

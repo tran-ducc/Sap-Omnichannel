@@ -65,12 +65,16 @@ export interface DashboardOverview {
   scope: "full" | "summary";
   range: DashboardRange;
   generatedAt: string;
+  /** Revenue, orders, AOV, charts and rankings count COMPLETED orders only (see REVENUE_STATUS). */
   kpis: {
     revenue: KpiPair;
     orders: KpiPair;
     aov: KpiPair;
+    /** CANCELLED / (COMPLETED + CANCELLED) in the period; returned and in-progress orders are left out. */
     cancelRate: KpiPair;
   };
+  /** Orders placed in the period and not finished yet (PENDING…SHIPPING): not revenue. */
+  inProgress: { orders: number; total: number };
   /** Last 7 days (oldest first), revenue per channel. */
   daily: { date: string; total: number; orders: number; byChannel: Partial<Record<ChannelType, number>> }[];
   channelShare: { channel: ChannelType; orders: number; revenue: number }[];

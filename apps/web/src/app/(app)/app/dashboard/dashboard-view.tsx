@@ -177,14 +177,21 @@ function KpiGrid({ data, className }: { data: DashboardOverview; className?: str
   return (
     <section aria-label="Chỉ số chính" className={cn("grid grid-cols-2 gap-3", className)}>
       <Kpi label="Doanh thu" value={formatVND(k.revenue.current)} pair={k.revenue} compare={cmp} />
-      <Kpi label="Đơn hàng" value={formatNumber(k.orders.current)} pair={k.orders} compare={cmp} />
+      {/* Revenue, orders and AOV count COMPLETED orders only; open orders are shown apart, never as revenue. */}
+      <Kpi
+        label="Đơn hoàn thành"
+        value={formatNumber(k.orders.current)}
+        pair={k.orders}
+        compare={cmp}
+        extra={`Đang xử lý: ${formatNumber(data.inProgress.orders)} đơn, ${formatVND(data.inProgress.total)} (chưa tính doanh thu)`}
+      />
       <Kpi label="Giá trị đơn trung bình" value={formatVND(k.aov.current)} pair={k.aov} compare={cmp} />
       <Kpi label="Tỷ lệ huỷ đơn" value={`${(k.cancelRate.current * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`} pair={k.cancelRate} compare={cmp} lowerIsBetter points />
     </section>
   );
 }
 
-function Kpi({ label, value, pair, compare, lowerIsBetter, points }: { label: string; value: string; pair: KpiPair; compare: string; lowerIsBetter?: boolean; points?: boolean }) {
+function Kpi({ label, value, pair, compare, lowerIsBetter, points, extra }: { label: string; value: string; pair: KpiPair; compare: string; lowerIsBetter?: boolean; points?: boolean; extra?: string }) {
   return (
     <div className="flex min-h-36 flex-col rounded-3xl bg-card p-4 sm:p-5">
       <p className="text-sm text-muted-foreground">{label}</p>
@@ -193,6 +200,7 @@ function Kpi({ label, value, pair, compare, lowerIsBetter, points }: { label: st
         <TrendBadge pair={pair} lowerIsBetter={lowerIsBetter} points={points} />
         <span className="text-xs text-muted-foreground">{compare}</span>
       </div>
+      {extra && <p className="mt-2 text-xs text-muted-foreground">{extra}</p>}
     </div>
   );
 }

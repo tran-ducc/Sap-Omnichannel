@@ -1,17 +1,23 @@
 import { Injectable } from "@nestjs/common";
-import { can, type ChannelType, type DashboardOverview, type DashboardRange } from "@omni/shared";
+import { can, IN_PROGRESS_STATUSES, REVENUE_STATUS, type ChannelType, type DashboardOverview, type DashboardRange } from "@omni/shared";
 import { Prisma } from "@prisma/client";
 import { locationWhere } from "../../common/location-scope";
 import type { AuthUser } from "../../common/permissions.guard";
 import { startOfVnDay, startOfVnMonth, vnDateKey } from "../../common/time";
 import { PrismaService } from "../../prisma/prisma.module";
 
-const num = (d: Prisma.Decimal | number | null | undefined) => (d == null ? 0 : Number(d));
+type Money = Prisma.Decimal;
+const ZERO = new Prisma.Decimal(0);
+const num = (d: Money | number | null | undefined) => (d == null ? 0 : Number(d));
+/** Money stays Decimal through sums; num() converts once when the response is built. */
+const IN_PROGRESS = [...IN_PROGRESS_STATUSES];
 
 interface DayStats {
-  revenue: number;
+  /** COMPLETED orders only (see REVENUE_STATUS). */
+  revenue: Money;
   orders: number;
   cancelled: number;
+  inProgress: { orders: number; total: Money };
 }
 
 @Injectable()
@@ -54,11 +60,12 @@ export class ReportsService {
       range,
       generatedAt: now.toISOString(),
       kpis: {
-        revenue: { current: cur.revenue, previous: prev.revenue },
+        revenue: { current: num(cur.revenue), previous: num(prev.revenue) },
         orders: { current: cur.orders, previous: prev.orders },
-        aov: { current: cur.orders ? cur.revenue / cur.orders : 0, previous: prev.orders ? prev.revenue / prev.orders : 0 },
+        aov: { current: aov(cur), previous: aov(prev) },
         cancelRate: { current: rate(cur), previous: rate(prev) },
       },
+      inProgress: { orders: cur.inProgress.orders, total: num(cur.inProgress.total) },
       daily: [],
       channelShare: [],
       topProducts: [],
@@ -89,12 +96,17 @@ export class ReportsService {
       this.topSeller(user.tenantId, startOfVnMonth(now)),
     ]);
 
-    result.daily = daily.map(({ ordersByChannel: _internal, ...d }) => d);
-    const share = new Map<ChannelType, { orders: number; revenue: number }>();
+    result.daily = daily.map((d) => ({
+      date: d.date,
+      total: num(d.total),
+      orders: d.orders,
+      byChannel: Object.fromEntries(Object.entries(d.byChannel).map(([ch, v]) => [ch, num(v)])),
+    }));
+    const share = new Map<ChannelType, { orders: number; revenue: Money }>();
     for (const d of daily) {
-      for (const [ch, rev] of Object.entries(d.byChannel) as [ChannelType, number][]) {
-        const s = share.get(ch) ?? { orders: 0, revenue: 0 };
-        s.revenue += rev;
+      for (const [ch, rev] of Object.entries(d.byChannel) as [ChannelType, Money][]) {
+        const s = share.get(ch) ?? { orders: 0, revenue: ZERO };
+        s.revenue = s.revenue.add(rev);
         share.set(ch, s);
       }
     }
@@ -102,7 +114,7 @@ export class ReportsService {
       const s = share.get(row.channel);
       if (s) s.orders = row.orders;
     }
-    result.channelShare = [...share.entries()].map(([channel, v]) => ({ channel, ...v })).sort((a, b) => b.revenue - a.revenue);
+    result.channelShare = [...share.entries()].map(([channel, v]) => ({ channel, orders: v.orders, revenue: num(v.revenue) })).sort((a, b) => b.revenue - a.revenue);
     result.topProducts = topProducts;
     result.lowStock = lowStock.items;
     result.lowStockCount = lowStock.count;
@@ -116,40 +128,46 @@ export class ReportsService {
 
   private async periodStats(scope: Prisma.OrderWhereInput, from: Date, to: Date): Promise<DayStats> {
     const range = { placedAt: { gte: from, lt: to } };
-    const [valid, cancelled] = await Promise.all([
-      this.prisma.order.aggregate({ where: { ...scope, ...range, status: { notIn: ["CANCELLED", "RETURNED"] } }, _sum: { total: true }, _count: true }),
+    const [completed, cancelled, inProgress] = await Promise.all([
+      this.prisma.order.aggregate({ where: { ...scope, ...range, status: REVENUE_STATUS }, _sum: { total: true }, _count: true }),
       this.prisma.order.count({ where: { ...scope, ...range, status: "CANCELLED" } }),
+      this.prisma.order.aggregate({ where: { ...scope, ...range, status: { in: IN_PROGRESS } }, _sum: { total: true }, _count: true }),
     ]);
-    return { revenue: num(valid._sum.total), orders: valid._count, cancelled };
+    return {
+      revenue: completed._sum.total ?? ZERO,
+      orders: completed._count,
+      cancelled,
+      inProgress: { orders: inProgress._count, total: inProgress._sum.total ?? ZERO },
+    };
   }
 
   /** Revenue and orders per Vietnam calendar day and channel, oldest first, gaps filled with zero. */
   private async daily(tenantId: string, from: Date) {
     // "placedAt" is stored as UTC without zone; convert to Vietnam local time before truncating to day.
-    const rows = await this.prisma.$queryRaw<{ day: Date; channel: ChannelType; revenue: number; orders: number }[]>`
+    const rows = await this.prisma.$queryRaw<{ day: Date; channel: ChannelType; revenue: Money; orders: number }[]>`
       SELECT date_trunc('day', ("placedAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh') AS day,
              "channelType" AS channel,
-             SUM(total)::float AS revenue,
+             SUM(total) AS revenue,
              COUNT(*)::int AS orders
       FROM "Order"
       WHERE "tenantId" = ${tenantId}
         AND "placedAt" >= ${from}
-        AND status NOT IN ('CANCELLED', 'RETURNED')
+        AND status = ${REVENUE_STATUS}::"OrderStatus"
       GROUP BY 1, 2`;
 
-    const days = new Map<string, DashboardOverview["daily"][number] & { ordersByChannel: Partial<Record<ChannelType, number>> }>();
+    const days = new Map<string, { date: string; total: Money; orders: number; byChannel: Partial<Record<ChannelType, Money>>; ordersByChannel: Partial<Record<ChannelType, number>> }>();
     for (let i = 0; i < 7; i++) {
       // from is 00:00 VN; +7h lands safely inside the same VN day for the key
       const key = vnDateKey(new Date(from.getTime() + i * 86_400_000));
-      days.set(key, { date: key, total: 0, orders: 0, byChannel: {}, ordersByChannel: {} });
+      days.set(key, { date: key, total: ZERO, orders: 0, byChannel: {}, ordersByChannel: {} });
     }
     for (const r of rows) {
       // day is a local-time timestamp returned as if UTC, so its ISO date is the VN date
       const d = days.get(r.day.toISOString().slice(0, 10));
       if (!d) continue;
-      d.total += r.revenue;
+      d.total = d.total.add(r.revenue);
       d.orders += r.orders;
-      d.byChannel[r.channel] = (d.byChannel[r.channel] ?? 0) + r.revenue;
+      d.byChannel[r.channel] = (d.byChannel[r.channel] ?? ZERO).add(r.revenue);
       d.ordersByChannel[r.channel] = (d.ordersByChannel[r.channel] ?? 0) + r.orders;
     }
     return [...days.values()];
@@ -158,7 +176,7 @@ export class ReportsService {
   private async topProducts(tenantId: string, from: Date) {
     const rows = await this.prisma.orderItem.groupBy({
       by: ["name"],
-      where: { order: { tenantId, placedAt: { gte: from }, status: { notIn: ["CANCELLED", "RETURNED"] } } },
+      where: { order: { tenantId, placedAt: { gte: from }, status: REVENUE_STATUS } },
       _sum: { quantity: true, total: true },
       orderBy: { _sum: { quantity: "desc" } },
       take: 5,
@@ -202,7 +220,7 @@ export class ReportsService {
     const elapsed = now.getTime() - monthStart.getTime();
     const sum = (from: Date, to: Date) =>
       this.prisma.order.aggregate({
-        where: { tenantId, placedAt: { gte: from, lt: to }, status: { notIn: ["CANCELLED", "RETURNED"] } },
+        where: { tenantId, placedAt: { gte: from, lt: to }, status: REVENUE_STATUS },
         _sum: { total: true },
       });
     const [cur, prev] = await Promise.all([sum(monthStart, now), sum(lastMonthStart, new Date(Math.min(lastMonthStart.getTime() + elapsed, monthStart.getTime())))]);
@@ -212,7 +230,7 @@ export class ReportsService {
   private async topSeller(tenantId: string, from: Date) {
     const rows = await this.prisma.order.groupBy({
       by: ["createdById"],
-      where: { tenantId, placedAt: { gte: from }, createdById: { not: null }, status: { notIn: ["CANCELLED", "RETURNED"] } },
+      where: { tenantId, placedAt: { gte: from }, createdById: { not: null }, status: REVENUE_STATUS },
       _count: { _all: true },
       orderBy: { _count: { createdById: "desc" } },
       take: 1,
@@ -223,9 +241,14 @@ export class ReportsService {
   }
 }
 
+/** Cancelled / (completed + cancelled) in the period; returned and in-progress orders are not in the base. */
 function rate(s: DayStats) {
   const all = s.orders + s.cancelled;
   return all ? s.cancelled / all : 0;
+}
+
+function aov(s: DayStats) {
+  return s.orders ? num(s.revenue.div(s.orders)) : 0;
 }
 
 /** Sums the per-channel order counts the daily query collected. */
